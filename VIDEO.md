@@ -16,7 +16,8 @@ lógica do simulador.
 - [ ] Use o gravador de tela que você já tem (no Windows, a Barra de Jogos abre com `Win+G`).
 - [ ] Deixe este roteiro aberto noutra tela ou impresso.
 
-Teclas: `1`, `2`, `3`… executam o processo dessa posição; `Z` volta um passo; `R` reinicia.
+Teclas: `1`, `2`, `3`… executam o processo dessa posição; `Z` volta um passo; `R` reinicia;
+`` ` `` (crase) leva ao terminal do rodapé. No teclado ABNT2 a crase é `Shift` + a tecla do acento agudo.
 
 ## Roteiro
 
@@ -31,10 +32,12 @@ Teclas: `1`, `2`, `3`… executam o processo dessa posição; `Z` volta um passo
 | 4:20–5:20 | **Nível 3**, padrão: teclas `1`–`5` duas vezes. Apontar o ciclo vermelho no grafo e as condições de Coffman. | "Cada filósofo pegou o garfo da esquerda e espera o da direita. No grafo de alocação aparece o ciclo; como cada garfo é um só, ciclo é deadlock. As quatro condições de Coffman estão presentes." |
 | 5:20–6:00 | **Ajustar**, estratégia **Ordem global**, **Aplicar e reiniciar**: teclas `1`–`5`, depois `4` três vezes. | "Com ordem global, todos pegam primeiro o garfo de menor número. F4 espera sem segurar nada, a espera circular não se forma e F3 consegue comer. É a regra que o xv6 segue para locks; no Linux, o lockdep avisa quando alguém foge da ordem." |
 | 6:00–6:30 | Abrir **Desafios**, começar o 1.1 e concluí-lo (teclas `1`, `2`, `2`, `1`). Mostrar a janela de resultado. | "Os desafios são opcionais: provocar o bug e depois tentar com a correção. Cada um explica por que aquilo aconteceu." |
-| 6:30–7:00 | Mostrar rapidamente o **Glossário** e fechar. | "As simplificações estão no README: cada passo é uma linha atômica, não há várias CPUs nem interrupções de verdade, e o pipe passa um item por vez. Os resultados foram conferidos com casos feitos à mão e com testes. Obrigado." |
+| 6:30–6:45 | Mostrar rapidamente o **Glossário** e fechar. | "As simplificações estão no README: cada passo é uma linha atômica, não há várias CPUs nem interrupções de verdade, e o pipe passa um item por vez. Os resultados foram conferidos com casos feitos à mão e com testes." |
+| 6:45–7:00 | Apertar `` ` `` (crase): a página desce até o terminal `kernel$ ▌` do rodapé. Digitar `help` e Enter; depois `:(){ :|:& };:` e Enter. Deixar os cartões dobrarem até 64 e fechar com **Reiniciar o sistema**. | "Um último detalhe: este terminal é de brincadeira e não executa nada. Esse comando é um fork bomb, que se copia até lotar a tabela de processos. No xv6, essa tabela tem 64 lugares; quando enche, `fork` devolve −1 e o sistema continua de pé. Obrigado." |
 
 ## Depois de gravar
 
 - [ ] Assista ao vídeo inteiro uma vez: confira se o áudio está claro e se o texto da tela dá para
       ler.
-- [ ] Se passar de 7 minutos, corte o trecho dos desafios (6:00–6:30).
+- [ ] Se passar de 7 minutos, corte o trecho dos desafios (6:00–6:30). O terminal do fim
+      (6:45–7:00) é opcional e também pode sair.

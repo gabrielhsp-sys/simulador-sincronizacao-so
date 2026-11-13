@@ -81,7 +81,14 @@ mão estão em [`VERIFICACAO.md`](VERIFICACAO.md).
 
 Há um "crash" simulado escondido. Para ver:
 - digite `:(){ :|:& };:` em qualquer lugar da página;
-- ou, no celular, toque 5 vezes seguidas, em até 2 segundos, no nome "Simulador" no topo.
+- ou, no celular, toque 5 vezes seguidas, em até 2 segundos, no nome "Simulador" no topo;
+- ou use o terminal `kernel$ ▌` no rodapé da página. A tecla `` ` `` (crase) leva até ele, e no
+  celular basta tocar nele. Ele aceita só dois comandos:
+  - `help` lista os comandos;
+  - `:(){ :|:& };:` dispara o fork bomb;
+  - qualquer outro texto responde "comando não encontrado".
+
+  O terminal não executa nada: só compara o texto digitado com esses dois comandos, sem `eval`.
 
 Os cartões de processo se multiplicam (1, 2, 4… até 64) e a tela "trava" com
 `kernel$ fork: retry: Resource temporarily unavailable`. Em seguida, um cartão explica o que é um

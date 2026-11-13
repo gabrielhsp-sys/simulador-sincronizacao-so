@@ -314,6 +314,20 @@ html.apresentacao .frase { font-size: 1.45rem; }
 .ir-baixo:hover { background: #333; }
 .dlg-confirmar { max-width: min(30rem, calc(100vw - 2rem)); }
 
+/* ---------- terminal discreto do rodapé (easter egg; nada roda de verdade) ---------- */
+.rodape { max-width: 1440px; margin: 0 auto; padding: 0 1.25rem 1.5rem; }
+.terminal { width: min(100%, 34rem); background: var(--kernel-fundo); border: 3px solid var(--tinta); box-shadow: 4px 4px 0 var(--tinta);
+  padding: .35rem .6rem; font: 700 .95rem/1.45 var(--mono); color: var(--kernel-texto); }
+.terminal:focus-within { outline: 4px solid var(--cobalto); outline-offset: 3px; }
+.term-linha { display: flex; align-items: baseline; gap: .55rem; }
+.term-linha .prompt, .term-saida .prompt { color: var(--kernel-prompt); }
+.term-campo { position: relative; flex: 1; min-width: 0; display: flex; }
+.term-campo input { flex: 1; min-width: 0; background: transparent; border: 0; padding: 0; color: var(--kernel-texto); caret-color: var(--kernel-prompt); font: inherit; }
+.term-campo input:focus-visible { outline: none; }   /* o contorno fica no terminal inteiro (:focus-within) */
+.term-campo .cursor { position: absolute; left: 0; top: 0; color: var(--kernel-prompt); pointer-events: none; }
+.terminal:focus-within .cursor, .term-campo input:not(:placeholder-shown) ~ .cursor { display: none; }
+.term-saida { margin: 0 0 .3rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
 /* ---------- movimento (desligado com prefers-reduced-motion) ---------- */
 @media (prefers-reduced-motion: no-preference) {
   .token.rodou { animation: acende .75s ease-out; }
@@ -335,7 +349,7 @@ html.apresentacao .frase { font-size: 1.45rem; }
   @keyframes tremor { 0%, 100% { transform: none; } 20% { transform: translate(-6px, 2px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, 0); } }
   .grade.tremor .eventos li:not(.giro) { animation: carimbo .5s cubic-bezier(.2,.9,.3,1); }
   @keyframes carimbo { from { transform: scale(1.6) rotate(-8deg); opacity: 0; } }
-  .alerta-kernel .cursor { animation: pisca 1s steps(1) infinite; }
+  .alerta-kernel .cursor, .term-campo .cursor { animation: pisca 1s steps(1) infinite; }
   @keyframes pisca { 50% { opacity: 0; } }
 }
 .coffman-tit { width: 100%; text-align: center; font: 900 .95rem var(--pesado); margin-top: .3rem; }
@@ -478,6 +492,18 @@ dialog.fb::backdrop { background: var(--tinta); }
   </div>
 </div>
 </main>
+<footer class="rodape">
+  <form class="terminal" id="terminal" autocomplete="off">
+    <p class="term-saida" id="termSaida" role="status" aria-live="polite" hidden></p>
+    <div class="term-linha">
+      <label for="termEntrada"><span class="prompt">kernel$</span><span class="so-leitor"> terminal de brincadeira: digite help e Enter</span></label>
+      <span class="term-campo">
+        <input id="termEntrada" name="cmd" type="text" maxlength="60" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder=" " aria-keyshortcuts="`">
+        <span class="cursor" aria-hidden="true">▌</span>
+      </span>
+    </div>
+  </form>
+</footer>
 <a class="ir-baixo" id="irBaixo" href="#baixo" hidden>↓ Linha do tempo e código</a>
 
 <!-- ======================= DIÁLOGOS ======================= -->
@@ -2112,7 +2138,10 @@ var Logica = (function () {
    - não toca em Logica nem no estado da simulação. Se o Auto estiver
      rodando, ele é pausado pelo próprio botão e retomado ao fechar.
    Gatilhos (documentados só no README): digitar :(){ :|:& };: em
-   qualquer lugar, ou tocar 5 vezes em 2 s no nome "Simulador" no topo.
+   qualquer lugar, tocar 5 vezes em 2 s no nome "Simulador" no topo,
+   ou mandar o mesmo texto no terminal "kernel$" do rodapé (tecla `).
+   O terminal só compara o texto com 2 comandos fixos (help e o fork
+   bomb); não executa nada e não usa eval.
    ===================================================================== */
 (function () {
   'use strict';
@@ -2131,6 +2160,11 @@ var Logica = (function () {
     if (ev.ctrlKey || ev.metaKey || ev.altKey || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     if (document.querySelector('dialog[open]')) return;
     var k = ev.key;
+    // ` abre (foca) o terminal do rodapé. No teclado ABNT2 a crase é tecla morta (Shift + ´).
+    if (k === '`' || (k === 'Dead' && ev.code === 'BracketLeft' && ev.shiftKey)) {
+      if (entrada) { ev.stopImmediatePropagation(); ev.preventDefault(); buf = ''; entrada.focus(); }
+      return;
+    }
     if (k === ' ') { if (buf) { ev.stopImmediatePropagation(); ev.preventDefault(); } return; }
     if (k.length !== 1) return;
     var nb = buf + k;
@@ -2145,6 +2179,39 @@ var Logica = (function () {
     toques = toques.filter(function (x) { return agora - x < 2000; }); toques.push(agora);
     if (toques.length >= 5) { toques = []; abrir(); }
   });
+
+  // Terminal do rodapé: só compara texto com 2 comandos fixos. Nada é executado (sem eval).
+  var entrada = document.getElementById('termEntrada'), saida = document.getElementById('termSaida');
+  function responder(cmd, linhas) {
+    saida.textContent = '';
+    var eco = document.createElement('span'); eco.className = 'prompt'; eco.textContent = 'kernel$';
+    saida.appendChild(eco);
+    saida.appendChild(document.createTextNode(' ' + cmd + '\n' + linhas.join('\n')));
+    saida.hidden = false;
+  }
+  if (entrada) {
+    // A crase da tecla morta pode cair no campo junto com a próxima letra: ela não faz parte de comando nenhum.
+    entrada.addEventListener('input', function () { if (entrada.value.indexOf('`') >= 0) entrada.value = entrada.value.replace(/`/g, ''); });
+    entrada.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && entrada.value) { ev.preventDefault(); entrada.value = ''; } });
+    document.getElementById('terminal').addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var cmd = entrada.value.trim();
+      entrada.value = '';
+      if (!cmd) return;
+      var curto = cmd.length > 40 ? cmd.slice(0, 40) + '…' : cmd;
+      if (cmd.replace(/\s+/g, '') === ALVO) {
+        responder(curto, ['fork: retry: Resource temporarily unavailable']);
+        abrir();
+      } else if (cmd.toLowerCase() === 'help') {
+        responder(curto, ['comandos:',
+          '  help            mostra esta lista',
+          '  :(){ :|:& };:   fork bomb (de mentira)',
+          'nada aqui roda de verdade.']);
+      } else {
+        responder(curto, [curto + ': comando não encontrado (digite help)']);
+      }
+    });
+  }
 
   function depois(ms, f) { timers.push(setTimeout(f, ms)); }
   function cartao(i) {

@@ -291,3 +291,26 @@ foi tocado.
 | Easter egg com reduced-motion | PASS | Tela final direto (64 cartões, cartão didático), `animation-name: none` na faixa, nos cartões e na caixa. |
 | Sem "panic" na interface | PASS | Só em comentários do código. |
 | Sem rede | PASS | `grep` no `index.html`: 0 ocorrências. |
+
+## Terminal do easter egg (13/11/2026)
+
+A lógica e os testes não mudaram.
+
+| Critério | Resultado | Evidência |
+|---|---|---|
+| Testes da lógica | PASS | `node --test`: `# pass 18`, `# fail 0` |
+| Atalho `` ` `` | PASS | `` ` `` e a tecla morta do ABNT2 (`Dead` + `Shift` + `BracketLeft`) focam o campo sem dar passo. Com o diálogo do easter egg aberto, a tecla não sai dele. |
+| Teclas dentro do campo | PASS | `1` e `A` digitados no campo não executam processo nem ligam o Auto. |
+| `help` | PASS | Também com maiúsculas e espaços (`HELP `). Lista os dois comandos e diz que nada roda de verdade. |
+| Comando desconhecido | PASS | `ls -la` responde `ls -la: comando não encontrado (digite help)`. Texto com mais de 40 caracteres é cortado com "…". |
+| Texto com HTML | PASS | `<img src=x onerror=alert(1)>` aparece como texto; nenhum `<img>` foi criado. |
+| Fork bomb pelo terminal | PASS | Com e sem espaços. Abre o easter egg (64 cartões, tela final); Esc e "Reiniciar o sistema" fecham, o foco volta ao campo, e o palco e o passo ficam idênticos. |
+| Gatilhos antigos | PASS | O teste das 3 vezes seguidas (teclado, 5 toques e teclado com Auto) passou igual ao da rodada anterior. |
+| Sem rolagem horizontal | PASS | `scrollWidth == clientWidth` com a resposta do `help` na tela, em 1280, 1366, 1920 e "480" (477 px no Edge). |
+| Contraste | PASS | Prompt 12,2:1 e texto 15,6:1 sobre preto; contorno de foco 4,14:1 sobre o amarelo. |
+| Reduced-motion | PASS | Cursor ▌ com `animation-name: pisca` normalmente e `none` com `--force-prefers-reduced-motion`. |
+| Erros de JavaScript | PASS | 0 em todos os testes acima. |
+| Sem `eval` | PASS | O `grep` não acha `eval(`, `new Function` nem `innerHTML` no código do terminal. |
+
+Não testado: teclado ABNT2 de verdade (o headless só simula o evento da tecla morta) e leitor de
+tela de verdade.

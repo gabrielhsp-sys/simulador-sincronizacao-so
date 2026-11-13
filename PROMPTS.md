@@ -309,7 +309,7 @@ Dois cuidados nos documentos:
 | Revisão de UI | A ação principal ("Executar") estava com estilo secundário; havia heading sem seção, abas sem painel e anúncios demais no modo Auto. | As quatro correções foram aprovadas e aplicadas (prompt 4). |
 
 
-## Rodada de interface e acabamento (prompts 5 a 9)
+## Rodada de interface e acabamento (prompts 5 a 10)
 
 A primeira interface foi reprovada pelo autor. Os prompts abaixo conduziram:
 - o redesenho;
@@ -726,6 +726,27 @@ nenhum outro repositório). Não altere <script id="logica"> nem tests/: 18/18 c
 - Algo que exija tocar na lógica ou nos testes.
 - Push recusado (não force).
 - Dado pessoal que não dê para remover sem decisão.
+```
+
+</details>
+
+<details>
+<summary>Prompt 10 — terminal discreto no easter egg</summary>
+
+```markdown
+Acrescente um terminal discreto ao easter egg, sem remover os gatilhos atuais:
+- Um prompt pequeno "kernel$ ▌" no rodapé da página (ou aberto pela tecla `), com estilo
+  Fábrica de Processos, onde o usuário pode digitar comandos.
+- Comandos aceitos:
+  - :(){ :|:& };: → dispara o fork bomb;
+  - help → lista os comandos;
+  - qualquer outro → "comando não encontrado".
+- Não executa nada de verdade; sem eval. Acessível por teclado, com label para leitor de tela,
+  AA, reduced-motion.
+- Não toque em <script id="logica"> nem em tests/. 18/18, sem erro de JavaScript, sem rolagem
+  horizontal nas 4 larguras.
+- Atualize o README.md (seção Easter egg) e o VIDEO.md (mostrar o terminal no fim).
+- Commit e push na main, sem --force. Confirme o Pages com curl -sI (200).
 ```
 
 </details>
