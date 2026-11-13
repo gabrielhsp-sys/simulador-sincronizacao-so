@@ -1,51 +1,48 @@
-# Como publicar
+# Publicação: registro do que foi feito
 
-Checklist para o autor. Publicar é uma ação manual: nada aqui foi feito automaticamente.
-`USUARIO` e `REPOSITORIO` são exemplos; troque pelos seus.
+O simulador está publicado no GitHub Pages:
 
-## 1. Conferir antes de publicar
+- **Simulador:** https://gabrielhsp-sys.github.io/simulador-sincronizacao-so/
+- **Repositório (público):** https://github.com/gabrielhsp-sys/simulador-sincronizacao-so
 
-- [ ] Abra o `index.html` direto do disco (dois cliques, ou arraste para o navegador). O endereço
-      deve começar com `file://`.
-- [ ] Teste os três níveis: execute alguns passos, use Voltar, Reiniciar e Auto.
-- [ ] Abra um desafio e conclua; veja se as estrelas aparecem.
-- [ ] Teste no Chrome, no Edge e no Firefox.
-- [ ] Opcional, se o Node estiver instalado: `node --test` na pasta do projeto deve mostrar
-      `pass 18` e `fail 0`.
+## O que foi feito (12/11/2026, com autorização explícita do autor)
 
-## 2. Publicar no GitHub Pages
+1. Conferências só de leitura antes de qualquer escrita:
+   - login do `gh` ativo;
+   - dono da conta confirmado;
+   - repositório ainda inexistente;
+   - portfólio sem domínio próprio, o que dá o endereço final `https://<login>.github.io/simulador-sincronizacao-so/`.
+2. Privacidade:
+   - O histórico local tinha o e-mail pessoal do autor, então **não foi publicado**. Ele ficou só na
+     branch local `historico-local`.
+   - A branch `main` publicada nasceu órfã, com **um commit** do estado final, autorado pelo e-mail
+     `noreply` do GitHub. O `git config` não foi alterado.
+   - `prompt.md`, `mockups/` e `screenshots/` ficaram fora do commit (`.gitignore`).
+   - Uma varredura nos arquivos versionados não achou e-mails nem nomes.
+3. Repositório criado como público e `main` enviada, sem `--force` e sem tocar em nenhum outro
+   repositório.
+4. GitHub Pages ligado em `main` / `(root)`. Depois do build, o endereço respondeu `200` e abriu no
+   Edge sem erro de JavaScript (veja `VERIFICACAO.md`).
 
-1. [ ] Entre no GitHub e crie um repositório **público** (botão **New**). Por exemplo,
-       `REPOSITORIO`. Não marque "Add a README" (o projeto já tem um).
-2. [ ] Na página do repositório vazio, clique em **uploading an existing file**.
-3. [ ] Arraste estes arquivos e a pasta `tests`:
-       `index.html`, `README.md`, `VERIFICACAO.md`, `DECISOES.md`, `PROMPTS.md`, `NIELSEN.md`,
-       `ROTEIRO-APRESENTACAO.md`, `PUBLICAR.md`, `VIDEO.md`, `tests/logica.test.js`.
-       **Não envie** o `prompt.md`: ele tem o seu nome, e o texto dele já está em `PROMPTS.md`
-       com o nome trocado.
-4. [ ] Escreva uma mensagem (por exemplo, "Simulador v1") e clique em **Commit changes**.
-5. [ ] Vá em **Settings → Pages**. Em **Build and deployment → Source**, escolha **Deploy from a
-       branch**. Em **Branch**, escolha **main** e a pasta **/ (root)**. Clique em **Save**.
-6. [ ] Espere alguns minutos. O endereço aparece no topo da mesma página:
-       `https://USUARIO.github.io/REPOSITORIO/`.
-7. [ ] Abra o link numa **janela anônima** (`Ctrl+Shift+N` no Chrome e no Edge,
-       `Ctrl+Shift+P` no Firefox) e, se possível, noutro computador ou no celular.
-8. [ ] Cole o link no Padlet.
+## O que continua manual
 
-Alternativa por linha de comando (o projeto já tem git local com histórico): crie o repositório
-vazio no GitHub e siga as instruções que ele mostra para "push an existing repository". O
-`prompt.md` não está no histórico do git, então não vai junto.
-
-## 3. Alternativa: anexar no Padlet
-
-1. [ ] No Padlet, anexe o `index.html` (o limite é 20 MB; o arquivo tem bem menos).
-2. [ ] Escreva junto: **"Baixe e abra no navegador."**
-3. [ ] Baixe o arquivo do próprio Padlet e abra para conferir. Funciona sem internet.
-
-## 4. Depois de publicar
-
-- [ ] Envie o link para quem vai apresentar (Pessoa 2) e para quem vai escrever a justificativa
-      (Pessoa 3), junto com `ROTEIRO-APRESENTACAO.md`, `DECISOES.md`, `PROMPTS.md` e
+- [ ] **Padlet:** colar o link do simulador. Alternativa: anexar o `index.html` (bem abaixo de 20 MB)
+      com o aviso **"Baixe e abra no navegador."**
+- [ ] Abrir o link numa janela anônima e noutro computador ou no celular.
+- [ ] Testar no Chrome e no Firefox (a verificação automática usou só o Edge).
+- [ ] Enviar o link para a Pessoa 2 (apresentação), com `ROTEIRO-APRESENTACAO.md`, e para a
+      Pessoa 3 (justificativa técnica), com `DECISOES.md`, `PROMPTS.md`, `NIELSEN.md` e
       `VERIFICACAO.md`.
-- [ ] Se mudar o `index.html` depois (até 25/11), envie o arquivo de novo pelo mesmo caminho. O
-      Pages atualiza em alguns minutos.
+
+## Como atualizar até 25/11
+
+Na pasta do projeto, depois de mudar e testar (`node --test` e abrir o `index.html` do disco):
+
+```bash
+git add <arquivos alterados>
+git -c user.name="<login>" -c user.email="<id>+<login>@users.noreply.github.com" commit -m "<o que mudou>"
+git push
+```
+
+Use sempre o e-mail `noreply` para não publicar o e-mail pessoal. O Pages atualiza sozinho em
+alguns minutos. Nunca use `git push --force` e não envie a branch `historico-local`.

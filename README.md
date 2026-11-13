@@ -20,7 +20,8 @@ com `prefers-reduced-motion`. Detalhes em [`DECISOES.md`](DECISOES.md).
 
 ## Como abrir
 
-- **Pela internet:** no endereço do GitHub Pages, `https://USUARIO.github.io/REPOSITORIO/`.
+- **Pela internet:** https://gabrielhsp-sys.github.io/simulador-sincronizacao-so/
+  (código em https://github.com/gabrielhsp-sys/simulador-sincronizacao-so).
 - **Do disco:** baixe o `index.html` e abra no navegador (Chrome, Edge ou Firefox). Não precisa
   de internet: o arquivo não faz nenhuma requisição de rede.
 
@@ -87,7 +88,7 @@ mão estão em [`VERIFICACAO.md`](VERIFICACAO.md).
 | `PROMPTS.md` | Prompts usados com a IA |
 | `NIELSEN.md` | Onde cada heurística de Nielsen foi aplicada |
 | `ROTEIRO-APRESENTACAO.md` | Roteiro de 5 min para a apresentação ao vivo |
-| `PUBLICAR.md` | Passo a passo para publicar no GitHub Pages ou no Padlet |
+| `PUBLICAR.md` | Registro da publicação e o que ainda é manual (Padlet, testes) |
 | `VIDEO.md` | Roteiro e checklist para gravar o vídeo |
 
 Feito com ajuda de IA (Claude Code). Os prompts estão em [`PROMPTS.md`](PROMPTS.md).

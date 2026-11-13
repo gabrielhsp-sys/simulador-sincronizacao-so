@@ -261,3 +261,12 @@ aplicação comparou o bloco da lógica antes e depois, e ele ficou idêntico by
 | Nenhuma requisição de rede | PASS | `grep` por `http`, `fetch`, `<link`, `import`: 0 ocorrências. |
 
 As capturas ficam em `screenshots/`, fora do Git.
+
+## Publicação (12/11/2026)
+
+| Verificação | Resultado | Evidência |
+|---|---|---|
+| Endereço responde | PASS | `curl -sI https://gabrielhsp-sys.github.io/simulador-sincronizacao-so/` → `HTTP/2 200`, `text/html; charset=utf-8` |
+| Publicado = arquivo testado | PASS | `curl -s <endereço> \| cmp - index.html`: conteúdo idêntico (123 418 bytes) |
+| Abre no navegador sem erro | PASS | Edge 152 headless no endereço publicado: interface montada ("Passo 0", cartões, tutorial do primeiro acesso) e nenhum erro de console |
+| Histórico publicado sem e-mail pessoal | PASS | `main` tem 1 commit, com autor e committer `noreply` do GitHub; o histórico com e-mail pessoal ficou só na branch local `historico-local` |
