@@ -309,7 +309,7 @@ Dois cuidados nos documentos:
 | Revisão de UI | A ação principal ("Executar") estava com estilo secundário; havia heading sem seção, abas sem painel e anúncios demais no modo Auto. | As quatro correções foram aprovadas e aplicadas (prompt 4). |
 
 
-## Rodada de interface e acabamento (prompts 5 a 11)
+## Rodada de interface e acabamento (prompts 5 a 12)
 
 A primeira interface foi reprovada pelo autor. Os prompts abaixo conduziram:
 - o redesenho;
@@ -816,6 +816,75 @@ repositório é público e o trabalho é do grupo).
 - Se não achar o terminal no repositório do portfólio: diga onde procurou e PARE.
 - Algo que exija tocar na lógica, nos testes ou no repositório do portfólio.
 - Push recusado.
+```
+
+</details>
+
+<details>
+<summary>Prompt 12 — dica "help" no rodapé e fork bomb muito mais intenso</summary>
+
+```markdown
+Duas alterações no terminal kernel$ e no easter egg.
+
+## 1. Dica "help" no terminal fechado
+- No prompt do RODAPÉ (o terminal fechado), mostre "help" como texto de dica dentro do campo,
+  semitransparente (placeholder), logo depois de "kernel$ ". Não é texto digitado: Enter com o
+  campo vazio não roda nada, e a dica some assim que a pessoa começa a digitar.
+- No terminal ABERTO (a janela modal), o campo fica sem dica nenhuma, só "kernel$ ▌".
+- A dica fica visível sobre o fundo preto mas claramente "apagada" em relação ao texto digitado,
+  por volta de 3:1. O label do campo para leitor de tela continua como está.
+
+## 2. Fork bomb muito mais intenso
+Objetivo: parecer que o site está realmente desmoronando, com erros por todo lado, antes do
+"reboot" e do cartão didático. Continua 100% FALSO e controlado.
+
+Ideias (use as que ficarem boas, no estilo Fábrica de Processos):
+- Escalada em fases (~6–8 s no total):
+  1. Cartões de processo dobrando (1→2→4…), contador "processos: N" disparando, tabela "ps" falsa
+     rolando sem parar.
+  2. Janelas de erro falsas se empilhando pela tela, em posições e ângulos tortos:
+     "fork: retry: Resource temporarily unavailable", "allocproc: tabela de processos cheia",
+     "fork() = -1", "out of PIDs", "kernel$ alerta: sistema sem resposta"…
+  3. A própria interface "quebra":
+     - glitch nos títulos;
+     - letras trocadas ou corrompidas por instantes;
+     - a página treme e se inclina;
+     - cores invertidas e faixa de risco por cima de tudo;
+     - os botões ficam "travados" (cursor de espera) e o contador de passos enlouquece na tela,
+       só no visual.
+  4. Clímax: a tela "congela", tudo escurece e sobra o kernel$ com o cursor ▌ e uma mensagem de
+     sistema sem resposta. Depois, um "reboot" curto (linhas de boot no estilo terminal) e o
+     cartão didático que já existe, dizendo que foi piada e explicando NPROC/fork() = -1 e o
+     Linux.
+
+Limites obrigatórios (segurança e acessibilidade):
+- Só visual:
+  - nada de Worker, nada de loop sem fim, nenhuma janela ou aba nova, nenhum alert();
+  - no máximo ~150 elementos animados ao mesmo tempo, todos removidos do DOM ao terminar;
+  - duração total no máximo ~10 s.
+- NÃO gere erros reais: nada de throw nem console.error. Os "erros" são elementos na tela. O
+  console do navegador tem de continuar limpo.
+- Flashes: no máximo 3 por segundo em qualquer área grande da tela (WCAG 2.3.1); nada de
+  estroboscópio branco ou vermelho de tela inteira.
+- Esc, clique ou "Reiniciar o sistema" interrompem a qualquer momento e devolvem a tela
+  exatamente como estava, incluindo o estado da simulação, que não pode mudar.
+- prefers-reduced-motion: sem tremor, glitch nem multiplicação animada; mostra direto a tela
+  final ("sistema sem resposta"), o reboot em texto e o cartão.
+- A palavra "panic" continua fora da interface.
+
+## Restrições gerais
+- Não altere <script id="logica"> nem tests/ (18/18).
+- Nenhum erro de JavaScript, inclusive disparando o fork bomb 3 vezes seguidas e interrompendo
+  com Esc no meio de cada fase. Sem rolagem horizontal nas 4 larguras, nem com a animação
+  rodando.
+- Commit e push na main, sem --force. Confirme o Pages com curl -sI (200) e abrindo no Edge.
+- Atualize README.md (Easter egg), VIDEO.md (o trecho do fork bomb, com a duração nova),
+  DECISOES.md e PROMPTS.md (este pedido, sanitizado).
+
+## Relatório
+- As fases da animação com a duração de cada uma.
+- Resultado de cada limite: elementos máximos, flashes por segundo, console limpo, Esc em cada
+  fase, reduced-motion.
 ```
 
 </details>

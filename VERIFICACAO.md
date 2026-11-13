@@ -338,3 +338,35 @@ A lógica e os testes não mudaram. A interface ganhou só a ponte `window.Simul
 | Erros de JavaScript | PASS | 0 em todos os testes acima. |
 
 Não testado: leitor de tela de verdade, teclado ABNT2 físico e celular de verdade.
+
+## Dica no rodapé e fork bomb intenso (13/11/2026)
+
+A lógica e os testes não mudaram: o bloco `<script id="logica">` é idêntico ao do commit
+anterior, e `tests/` não tem diferença. Os testes rodaram no Edge headless com relógio virtual,
+numa cópia descartável do `index.html`.
+
+| Critério | Resultado | Evidência |
+|---|---|---|
+| Testes da lógica | PASS | `node --test`: `# pass 18`, `# fail 0` |
+| Dica no rodapé | PASS | `placeholder="help"` em `rgb(106, 91, 64)`: 3,18:1 sobre o preto, contra 15,64:1 do texto digitado. O print mostra `kernel$ ▌help`; com `ps` digitado, a dica some. O label ("kernel$ terminal do simulador: digite help e Enter") não mudou. |
+| Enter com o rodapé vazio | PASS | Abre o terminal e não roda nada: o log tem só as 3 linhas de boas-vindas e 0 comandos. |
+| Terminal aberto sem dica | PASS | O `placeholder` do campo é um espaço; o print mostra só `kernel$ ▌`. |
+| Fases (1366 × 768, amostra a cada 50 ms) | PASS | 64 cartões aos 1,6 s; 22 janelas aos 3,7 s; interface quebrando aos 3,8 s; cores invertidas aos 4,6 s; congela aos 6,0 s; escuro aos 6,4 s; cartão aos 8,7 s (limite: ~10 s). |
+| Elementos | PASS | No máximo 131 elementos dentro do diálogo, igual nas 4 larguras (limite: ~150). As animações rodando no documento inteiro chegaram a 108. Esse número é um teto: no relógio virtual as animações de entrada não terminam. No fim, 0 diálogos `.fb` no DOM e nenhuma classe no `<html>`. |
+| Flashes | PASS | Só duas trocas grandes de luminosidade: inverter (4,6 s) e escurecer (6,4 s), 1,8 s uma da outra. As cores voltam aos 6,9 s, já por baixo do preto. O glitch faz 5 trocas por segundo, mas só nos títulos. O tremor é movimento, não pisca. |
+| Console limpo | PASS | 0 erros de JavaScript, 0 `unhandledrejection` e 0 chamadas a `console.error` em todos os testes. No script do easter egg não há `throw`, `console.error`, `alert(`, `eval(`, `Worker` nem `window.open`; "alert(" e "Worker" só aparecem num comentário. |
+| Interromper em cada fase | PASS | 3 rodadas seguidas × 7 momentos (0,6; 2,5; 4,6; 6,1; 7,0; 8,1 e 9,2 s), alternando Esc, "Reiniciar o sistema" e clique e os 3 gatilhos (teclado, 5 toques, `ForkBomb.abrir`). Em 1280, 1366, 1920 e 480 px: 84 de 84 restaurados. Depois de cada fechamento, `body.innerHTML`, classes do `<html>`, foco, rolagem e passo eram idênticos aos de antes. A corrida inteira, fechada com Esc no cartão, também. |
+| Sem rolagem horizontal | PASS | Amostra a cada 100 ms durante toda a animação, em 1280, 1366, 1920 e 480 (477 px), checando `scrollWidth` contra `clientWidth` e `scrollX` depois de `scrollTo(400, …)`: 0 violações. |
+| Reduced-motion | PASS | Com `--force-prefers-reduced-motion`: nenhum cartão nem janela; nenhuma classe no `<html>`; 0 animações; a tela "sistema sem resposta", as 6 linhas de boot e o cartão aparecem na hora, com o foco em "Reiniciar o sistema"; a tela volta igual. |
+| Pelo terminal | PASS | `forkbomb` interrompido com Esc: o terminal continua aberto, o foco volta ao campo, aparece "Digite `forkbomb` para tentar de novo." e o passo não mudou. O teste completo do terminal da rodada anterior saiu idêntico (141 linhas). |
+| "panic" | PASS | Não aparece na interface, só num comentário antigo do código. |
+| Contraste | PASS | Barra das janelas de erro (branco sobre #E0261B): 4,71:1; contador amarelo sobre preto: 13,08:1; boot sobre preto: 15,64:1 e 12,2:1; cartão: 18,88:1. |
+
+Os prints de cada fase estão conferidos. Na fase 3, as animações de entrada foram desligadas na
+cópia de teste, porque no relógio virtual elas ficam paradas no primeiro quadro.
+
+Não testado:
+- a animação em tempo real num navegador com janela;
+- leitor de tela de verdade e celular de verdade;
+- medição de fotossensibilidade com ferramenta própria (PEAT). Os flashes foram contados pelo
+  roteiro de tempos acima.

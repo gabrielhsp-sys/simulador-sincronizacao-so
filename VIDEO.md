@@ -32,11 +32,12 @@ Teclas: `1`, `2`, `3`… executam o processo dessa posição; `Z` volta um passo
 | 4:20–5:20 | **Nível 3**, padrão: teclas `1`–`5` duas vezes. Apontar o ciclo vermelho no grafo e as condições de Coffman. | "Cada filósofo pegou o garfo da esquerda e espera o da direita. No grafo de alocação aparece o ciclo; como cada garfo é um só, ciclo é deadlock. As quatro condições de Coffman estão presentes." |
 | 5:20–6:00 | **Ajustar**, estratégia **Ordem global**, **Aplicar e reiniciar**: teclas `1`–`5`, depois `4` três vezes. | "Com ordem global, todos pegam primeiro o garfo de menor número. F4 espera sem segurar nada, a espera circular não se forma e F3 consegue comer. É a regra que o xv6 segue para locks; no Linux, o lockdep avisa quando alguém foge da ordem." |
 | 6:00–6:30 | Abrir **Desafios**, começar o 1.1 e concluí-lo (teclas `1`, `2`, `2`, `1`). Mostrar a janela de resultado. | "Os desafios são opcionais: provocar o bug e depois tentar com a correção. Cada um explica por que aquilo aconteceu." |
-| 6:30–7:00 | Apertar `` ` `` (crase): abre o terminal `kernel$`. Digitar `help` e mostrar as categorias; depois `ps`, `glossario deadlock` e, por fim, `forkbomb`. Deixar os cartões dobrarem até 64 e fechar com **Reiniciar o sistema**. | "O simulador também tem um terminal. Os comandos usam os mesmos botões da página: `ps` lista os processos, `step` roda um passo, `glossario` explica um termo. Nada roda de verdade. O `forkbomb` é o jogo do terminal: os processos se copiam até lotar a tabela, que no xv6 tem 64 lugares. Quando ela enche, `fork` devolve −1 e o sistema continua de pé. As simplificações estão no README. Obrigado." |
+| 6:30–7:00 | Apertar `` ` `` (crase): abre o terminal `kernel$`. Digitar `help` e mostrar as categorias; depois `ps`, `glossario deadlock` e, por fim, `forkbomb`. Deixar a animação correr inteira (cerca de 9 s: os processos dobram até 64, as janelas de erro se empilham, a página treme e inverte, a tela escurece e o sistema "reinicia") e fechar no cartão com **Reiniciar o sistema**. | "O simulador também tem um terminal. Os comandos usam os mesmos botões da página: `ps` lista os processos, `step` roda um passo, `glossario` explica um termo. Nada roda de verdade. O `forkbomb` é o jogo do terminal: os processos se copiam até lotar a tabela, que no xv6 tem 64 lugares. Parece que o site caiu, mas é só animação: quando a tabela enche, `fork` devolve −1 e o sistema continua de pé. As simplificações estão no README. Obrigado." |
 
 ## Depois de gravar
 
 - [ ] Assista ao vídeo inteiro uma vez: confira se o áudio está claro e se o texto da tela dá para
       ler.
 - [ ] Se passar de 7 minutos, corte o trecho dos desafios (6:00–6:30). No terminal, dá para
-      pular `ps` e `glossario` e ir direto ao `forkbomb`.
+      pular `ps` e `glossario` e ir direto ao `forkbomb`. O fork bomb leva cerca de 9 s até o
+      cartão; não feche antes, ou o reboot não aparece no vídeo.

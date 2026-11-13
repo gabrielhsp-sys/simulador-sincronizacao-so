@@ -325,7 +325,10 @@ html.apresentacao .frase { font-size: 1.45rem; }
 .term-campo input { flex: 1; min-width: 0; background: transparent; border: 0; padding: 0; color: var(--kernel-texto); caret-color: var(--kernel-prompt); font: inherit; }
 .term-campo input:focus-visible { outline: none; }   /* o contorno fica no terminal inteiro (:focus-within) */
 .term-campo .cursor { position: absolute; left: 0; top: 0; color: var(--kernel-prompt); pointer-events: none; }
-.terminal:focus-within .cursor, .term-campo input:not(:placeholder-shown) ~ .cursor { display: none; }
+.term-campo input:not(:placeholder-shown) ~ .cursor { display: none; }
+/* Campo vazio: o ▌ fica no lugar do cursor do sistema; no rodapé, a dica "help" vem logo depois, apagada (~3:1). */
+.term-campo input:placeholder-shown { padding-left: 1.3ch; caret-color: transparent; }
+.term-campo input::placeholder { color: #6A5B40; opacity: 1; }
 
 /* overlay do terminal (aberto pela crase ou pelo prompt do rodapé) */
 dialog.term { position: fixed; inset: auto 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) auto; margin: 0; padding: 0;
@@ -351,7 +354,7 @@ body:has(dialog.term[open]) .ir-baixo { display: none; }   /* o link fixo não a
 .term-prompt:focus-within { box-shadow: inset 0 0 0 3px var(--kernel-prompt); }
 .term-prompt input { flex: 1; min-width: 0; background: transparent; border: 0; padding: 0; color: #FFFFFF; caret-color: var(--kernel-prompt); font: 700 1rem var(--mono); }
 .term-prompt input:focus-visible { outline: none; }
-.term-prompt input::placeholder { color: #A89A7C; opacity: 1; }
+.term-prompt .term-campo { font: 700 1rem/1.45 var(--mono); }
 @media (max-width: 520px) {
   dialog.term { inset: auto .5rem calc(.5rem + env(safe-area-inset-bottom, 0px)) auto; width: calc(100vw - 1rem); max-height: 68vh; }
 }
@@ -384,40 +387,79 @@ body:has(dialog.term[open]) .ir-baixo { display: none; }   /* o link fixo não a
 }
 .coffman-tit { width: 100%; text-align: center; font: 900 .95rem var(--pesado); margin-top: .3rem; }
 
-/* ---------- easter egg: "fork bomb" de mentira (só visual) ---------- */
-dialog.fb { width: 100vw; max-width: 100vw; height: 100vh; max-height: 100vh; margin: 0; padding: 0; border: 0; box-shadow: none;
-  background: var(--amarelo); background-image: radial-gradient(rgba(17,17,17,.13) 1.2px, transparent 1.4px); background-size: 18px 18px; overflow: hidden; }
-dialog.fb::backdrop { background: var(--tinta); }
-.fb-caixa { height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: .8rem; padding: 0 1rem 1.2rem; }
-.fb-caixa > * { flex: none; }
-.fb-faixa { height: 18px; margin: 0 -1rem; border-bottom: 4px solid var(--tinta); background: repeating-linear-gradient(-45deg, var(--tinta) 0 14px, var(--amarelo) 14px 28px); }
-.fb-topo { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: baseline; justify-content: space-between; }
-.fb-topo h2 { font: 900 1.6rem var(--mono); }
-.fb-cont { margin: 0; font: 900 1.4rem var(--pesado); background: var(--tinta); color: var(--amarelo); padding: .1rem .6rem; }
-.fb-chao { display: flex; flex-wrap: wrap; gap: .4rem; align-content: flex-start; min-height: 4rem; }
-.fb-proc { display: inline-flex; align-items: center; gap: .3rem; background: var(--cs); border: 3px solid var(--tinta); box-shadow: 3px 3px 0 var(--tinta); padding: .15rem .45rem; font: 900 .85rem var(--din); }
-.fb-proc i { width: .9rem; height: .9rem; background: var(--c); border: 2px solid var(--tinta); display: inline-block; }
-.fb-proc[data-forma="0"] i { border-radius: 50%; }
-.fb-proc[data-forma="3"] i { transform: rotate(45deg) scale(.8); }
-.fb-proc[data-forma="2"] i { clip-path: polygon(50% 0, 100% 100%, 0 100%); border: 0; filter: drop-shadow(1px 1px 0 var(--tinta)); }
-.fb-proc[data-forma="4"] i { clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); border: 0; filter: drop-shadow(1px 1px 0 var(--tinta)); }
-.fb-proc[data-forma="5"] i { clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); border: 0; filter: drop-shadow(1px 1px 0 var(--tinta)); }
-.fb-fim { display: grid; gap: .8rem; max-width: 52rem; }
-.fb-kernel { margin: 0; padding: .6rem .8rem; background: var(--kernel-fundo); border: 3px solid var(--erro); color: var(--kernel-texto); font: 700 1.05rem/1.45 var(--mono); }
+/* ---------- easter egg: "fork bomb" de mentira (só visual) ----------
+   Fases: 1) multiplicação, 2) janelas de erro, 3) a interface "quebra",
+   4) congela e escurece, 5) reboot em texto e o cartão. Tudo fica dentro
+   do <dialog class="fb">; na página só entram classes no <html>, que saem
+   ao fechar. Flashes: no máximo uma troca grande de luminosidade por
+   segundo (inverter as cores, escurecer); o resto é movimento ou área pequena. */
+dialog.fb { position: fixed; inset: 0; width: 100%; height: 100%; max-width: none; max-height: none; margin: 0; padding: 0; border: 0;
+  background: transparent; color: var(--tinta); overflow: hidden; cursor: wait; }
+dialog.fb::backdrop { background: transparent; }
+dialog.fb.final { cursor: default; }
+.fb-caos { position: absolute; inset: 0; z-index: 0; overflow: hidden; }   /* camada própria: o escuro (.fb-final) fica sempre por cima */
+.fb-topo { position: absolute; left: .8rem; top: .8rem; z-index: 5; max-width: calc(100% - 1.6rem); display: flex; flex-wrap: wrap; gap: .3rem .8rem; align-items: center;
+  background: var(--amarelo); border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: .35rem .7rem; }
+.fb-topo h2 { font: 900 1.25rem var(--mono); }
+.fb-cont { margin: 0; font: 900 1.15rem var(--pesado); background: var(--tinta); color: var(--amarelo); padding: .1rem .5rem; }
+.fb-ps { position: absolute; right: .8rem; top: 5.4rem; z-index: 2; width: min(25rem, calc(100% - 1.6rem)); height: 15.5rem; margin: 0; overflow: hidden;
+  background: var(--kernel-fundo); color: var(--kernel-texto); border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: .5rem .7rem; font: 700 .8rem/1.35 var(--mono); white-space: pre; }
+.fb-proc { position: absolute; z-index: 1; display: inline-flex; align-items: center; gap: .3rem; background: var(--cs); border: 3px solid var(--tinta); box-shadow: 3px 3px 0 var(--tinta);
+  padding: .15rem .45rem; font: 900 .85rem var(--din); }
+.fb-proc::before { content: ""; width: .9rem; height: .9rem; box-sizing: border-box; background: var(--c); border: 2px solid var(--tinta); }
+.fb-proc[data-forma="0"]::before { border-radius: 50%; }
+.fb-proc[data-forma="3"]::before { transform: rotate(45deg) scale(.8); }
+.fb-proc[data-forma="2"]::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border: 0; }
+.fb-proc[data-forma="4"]::before { clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); border: 0; }
+.fb-proc[data-forma="5"]::before { clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); border: 0; }
+.fb-erro { position: absolute; z-index: 2; width: min(19rem, calc(100% - 1rem)); rotate: var(--r, 0deg); background: #fff; border: 3px solid var(--tinta); box-shadow: var(--sombra);
+  padding: 0 .6rem .5rem; font: 700 .9rem/1.35 var(--mono); }
+.fb-erro::before { content: "pid " attr(data-pid) ": erro"; display: block; margin: 0 -.6rem .4rem; padding: .15rem .6rem; background: var(--erro); color: #fff;
+  border-bottom: 3px solid var(--tinta); font: 900 .85rem var(--din); }
+.fb-fita { position: absolute; left: -20%; width: 140%; height: 3.2rem; z-index: 4; border-block: 4px solid var(--tinta);
+  background: repeating-linear-gradient(-45deg, var(--tinta) 0 22px, var(--amarelo) 22px 44px); }
+.fb-fita.a { top: 36%; rotate: -7deg; }
+.fb-fita.b { top: 64%; rotate: 5deg; }
+.fb-ruido { position: absolute; z-index: 3; overflow: hidden; white-space: nowrap; display: flex; align-items: center; padding: 0 .25rem;
+  background: var(--tinta); color: var(--amarelo); font: 900 1rem/1 var(--mono); }
+.fb-ruido.passo { background: var(--erro); color: #fff; }
+.fb-sair { position: absolute; right: 1rem; bottom: calc(1rem + env(safe-area-inset-bottom, 0px)); z-index: 6; box-shadow: 5px 5px 0 var(--amarelo); }   /* visível também sobre o preto */
+.fb-final { position: absolute; inset: 0; z-index: 5; overflow-y: auto; overscroll-behavior: contain; background: var(--kernel-fundo); opacity: 0;
+  display: flex; flex-direction: column; align-items: flex-start; gap: .9rem; padding: 1.4rem 1rem 1.6rem; }
+.fb-final.on { opacity: 1; }
+.fb-final > * { flex: none; }
+.fb-kernel { margin: 0; color: var(--kernel-texto); font: 700 1.15rem/1.45 var(--mono); }
 .fb-kernel .prompt { color: var(--kernel-prompt); }
-.fb-cartao { background: #fff; border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: .9rem 1rem; }
+.fb-boot { margin: 0; color: var(--kernel-texto); font: 700 .95rem/1.5 var(--mono); white-space: pre-wrap; }
+.fb-boot:empty { display: none; }
+.fb-cartao { max-width: 52rem; background: #fff; border: 4px solid var(--amarelo); box-shadow: 8px 8px 0 var(--amarelo); padding: .9rem 1rem; }
 .fb-cartao h3 { font: 900 1.15rem var(--pesado); margin-bottom: .4rem; }
 .fb-cartao p { margin: .4rem 0; max-width: 72ch; }
 .fb-cartao code { background: #FBF8EE; border: 1px solid var(--tinta); padding: 0 .2rem; }
-.fb.trava .fb-chao { filter: grayscale(1) contrast(1.1); }
+.fb-cartao .fb-sair { position: static; margin-top: .4rem; }
+/* A página por baixo: só classes no <html>, removidas ao fechar. */
+html.fb-ativo, html.fb-ativo body { overflow-x: clip; }            /* tremor e inclinação sem rolagem lateral */
+html.fb-quebra body > :not(dialog) button { filter: grayscale(1); opacity: .55; }
+html.fb-invertido body > :not(dialog), html.fb-invertido dialog.term[open] { filter: invert(1) hue-rotate(180deg); }
 @media (prefers-reduced-motion: no-preference) {
-  .fb-faixa { animation: fb-pisca .3s steps(1) infinite; }
-  @keyframes fb-pisca { 50% { background-position: 14px 0; } }
-  .fb.trava .fb-faixa { animation: none; }
   .fb-proc { animation: fb-nasce .28s cubic-bezier(.2,.9,.3,1); }
   @keyframes fb-nasce { from { transform: scale(.2); opacity: 0; } }
-  .fb.trava .fb-caixa { animation: tremor .42s steps(6); }
+  .fb-erro { animation: fb-cai .22s cubic-bezier(.2,.9,.3,1); }
+  @keyframes fb-cai { from { transform: scale(1.4); opacity: 0; } }
+  .fb-fita { animation: fb-fita-entra .4s cubic-bezier(.2,.9,.3,1); }
+  @keyframes fb-fita-entra { from { translate: -70% 0; } }
   .fb-kernel .cursor { animation: pisca 1s steps(1) infinite; }
+  .fb-final { transition: opacity .5s ease-out; }
+  html.fb-quebra body > :not(dialog) { rotate: -1.2deg; transition: rotate .9s cubic-bezier(.2,.9,.3,1); animation: fb-treme .5s ease-in-out infinite alternate; }
+  html.fb-quebra dialog.term[open] { rotate: 1.5deg; transition: rotate .9s cubic-bezier(.2,.9,.3,1); }
+  @keyframes fb-treme { from { translate: -5px 2px; } to { translate: 5px -3px; } }
+  html.fb-quebra .marca, html.fb-quebra main h2 { animation: fb-glitch .8s steps(1) infinite; }   /* 5 trocas/s numa área pequena */
+  @keyframes fb-glitch {
+    0% { translate: 0; clip-path: none; text-shadow: none; }
+    25% { translate: -5px 0; clip-path: inset(12% 0 38% 0); text-shadow: 3px 0 var(--erro), -3px 0 var(--cobalto); }
+    50% { translate: 4px 0; clip-path: inset(46% 0 4% 0); text-shadow: -3px 0 var(--erro); }
+    75% { translate: 0; clip-path: none; text-shadow: 2px 0 var(--cobalto); } }
+  html.fb-congela body > :not(.fb), html.fb-congela body > :not(.fb) *, .fb.congela .fb-caos, .fb.congela .fb-caos * { animation-play-state: paused !important; }
 }
 </style>
 </head>
@@ -527,7 +569,7 @@ dialog.fb::backdrop { background: var(--tinta); }
     <div class="term-linha">
       <label for="termEntrada"><span class="prompt">kernel$</span><span class="so-leitor"> terminal do simulador: digite help e Enter</span></label>
       <span class="term-campo">
-        <input id="termEntrada" name="cmd" type="text" maxlength="80" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder=" " aria-keyshortcuts="`">
+        <input id="termEntrada" name="cmd" type="text" maxlength="80" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder="help" aria-keyshortcuts="`">
         <span class="cursor" aria-hidden="true">▌</span>
       </span>
     </div>
@@ -542,7 +584,10 @@ dialog.fb::backdrop { background: var(--tinta); }
   <p class="so-leitor" role="status" id="termStatus"></p>
   <form class="term-linha term-prompt" id="termForm" autocomplete="off">
     <label for="termCmd"><span class="prompt">kernel$</span><span class="so-leitor"> comando (help lista todos)</span></label>
-    <input id="termCmd" name="cmd" type="text" maxlength="80" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder="help" aria-describedby="termDica">
+    <span class="term-campo">
+      <input id="termCmd" name="cmd" type="text" maxlength="80" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder=" " aria-describedby="termDica">
+      <span class="cursor" aria-hidden="true">▌</span>
+    </span>
     <span class="so-leitor" id="termDica">Seta para cima e para baixo: histórico. Tab: completa. Esc ou crase: fecha.</span>
   </form>
 </dialog>
@@ -2239,11 +2284,22 @@ var Logica = (function () {
 <script id="easter-egg">
 /* =====================================================================
    EASTER EGG — "fork bomb" de mentira. É SÓ VISUAL:
-   - não cria processo, Worker, janela nem aba; não tem laço sem fim;
-   - no máximo 64 cartões na tela e ~4 s de animação, com timers finitos;
-   - ao fechar, o diálogo é removido do DOM e os timers são cancelados;
+   - não cria processo, Worker, janela nem aba; não chama alert(); não
+     tem laço sem fim: todos os passos são setTimeout com hora marcada
+     (o último em ~8,6 s) e são cancelados ao fechar;
+   - no máximo ~130 elementos dentro do diálogo (64 cartões, 22 janelas…); o diálogo inteiro sai do
+     DOM ao fechar, e as classes postas no <html> também saem;
+   - não lança erro nem escreve no console: os "erros" são caixas na tela;
+   - flashes: uma troca grande de luminosidade por vez, com 1 s ou mais
+     entre elas (inverter as cores, escurecer); o resto é movimento ou
+     área pequena (WCAG 2.3.1: no máximo 3 por segundo);
    - não toca em Logica nem no estado da simulação. Se o Auto estiver
      rodando, ele é pausado pela mesma função do botão e retomado ao fechar.
+   Fases (com movimento): 1) multiplicação 0–1,7 s; 2) janelas de erro
+   1,7–3,7 s; 3) a interface "quebra" 3,7–5,9 s; 4) congela e escurece
+   5,9–7,6 s; 5) reboot em texto 7,6–8,6 s e o cartão. Com
+   prefers-reduced-motion: tela final, reboot e cartão direto.
+   Esc, um clique ou "Reiniciar o sistema" fecham em qualquer fase.
    Gatilhos (documentados no README): digitar :(){ :|:& };: em qualquer
    lugar, tocar 5 vezes em 2 s no nome "Simulador" no topo, ou os
    comandos forkbomb e :(){ :|:& };: no terminal kernel$ (script abaixo).
@@ -2252,6 +2308,13 @@ var Logica = (function () {
   'use strict';
   var ALVO = ':(){:|:&};:';            // comparado sem espaços
   var MAX = 64;                         // = NPROC do xv6-riscv (kernel/param.h)
+  var T = { dobra: 250, erros: 1700, erroPasso: 90, quebra: 3700, inverte: 4500, congela: 5900,
+            escurece: 6300, alerta: 6800, boot: 7600, bootPasso: 140, cartao: 8600 };
+  var ERROS = ['fork: retry: Resource temporarily unavailable', 'allocproc: tabela de processos cheia', 'fork() = -1',
+               'out of PIDs', 'kernel$ alerta: sistema sem resposta', 'sh: fork: EAGAIN', 'proc[NPROC]: 64 de 64 em uso',
+               'ulimit -u: limite de processos atingido', 'scheduler: 64 processos RUNNABLE', 'kernel$ alerta: escalonador sem resposta'];
+  var CLASSES = ['fb-ativo', 'fb-quebra', 'fb-invertido', 'fb-congela'];
+  var raiz = document.documentElement;
   var buf = '', aberto = null, timers = [], focoAntes = null, autoEstava = false, toques = [], abertoEm = 0;
 
   // Teclado: só olha a sequência; espaços dentro da sequência não viram "passo aleatório".
@@ -2284,12 +2347,18 @@ var Logica = (function () {
   window.ForkBomb = Object.freeze({ abrir: function (depois) { if (aberto) return; aoFechar = depois || null; abrir(); } });
 
   function depois(ms, f) { timers.push(setTimeout(f, ms)); }
-  function cartao(i) {
-    var k = i % 6, el = document.createElement('span');
-    el.className = 'fb-proc'; el.setAttribute('data-forma', k);
-    el.style.cssText = '--c:var(--p' + k + ');--cs:var(--p' + k + '-suave)';
-    el.innerHTML = '<i></i>:' + (i + 1);
-    return el;
+  function sorteia(a, b) { return a + Math.random() * (b - a); }
+  function el(tag, classe, texto) {
+    var e = document.createElement(tag);
+    if (classe) e.className = classe;
+    if (texto != null) e.textContent = texto;
+    return e;
+  }
+  function visivel(r, W, H) { return r.width > 16 && r.height > 8 && r.bottom > 0 && r.top < H && r.left < W && r.right > 0; }
+  // Troca ~40% das letras por símbolos (só no texto da caixa sobreposta; a página não muda).
+  function corrompe(txt) {
+    var lixo = '#%&@$!?/\\|_=+*01<>';
+    return txt.replace(/\S/g, function (c) { return Math.random() < .4 ? lixo.charAt(Math.floor(Math.random() * lixo.length)) : c; });
   }
 
   function abrir() {
@@ -2299,40 +2368,139 @@ var Logica = (function () {
     autoEstava = !!UI && UI.autoLigado();
     if (autoEstava) UI.alternarAuto();   // pausa o Auto (a mesma função do botão)
     var reduz = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var passo = UI ? UI.passo() : 0;
     var d = document.createElement('dialog');
-    d.className = 'fb'; d.setAttribute('aria-label', 'Easter egg: fork bomb');
-    d.innerHTML = '<div class="fb-caixa" tabindex="-1">' +
-      '<div class="fb-faixa" aria-hidden="true"></div>' +
-      '<div class="fb-topo"><h2>:(){ :|:&amp; };:</h2><p class="fb-cont">processos: <span id="fbN">1</span></p></div>' +
-      '<div class="fb-chao" id="fbChao" aria-hidden="true"></div>' +
-      '<div class="fb-fim" id="fbFim" hidden>' +
-        '<p class="fb-kernel"><span class="prompt">kernel$</span> fork: retry: Resource temporarily unavailable<br>' +
-        '<span class="prompt">kernel$</span> a fábrica lotou: ' + MAX + ' processos, e todos só sabem se copiar.<span class="cursor" aria-hidden="true">▌</span></p>' +
-        '<div class="fb-cartao"><h3>Calma: foi só um easter egg</h3>' +
-        '<p>Nada travou de verdade. O “crash” é piada, e a sua simulação continua exatamente onde estava.</p>' +
-        '<p><code>:(){ :|:&amp; };:</code> é um <b>fork bomb</b>: define uma função chamada <code>:</code> que chama a si mesma duas vezes, ligadas por um pipe, em segundo plano. Cada cópia faz o mesmo, e o número de processos dobra a cada rodada até acabar a tabela de processos.</p>' +
-        '<p><b>No xv6 o sistema não cai.</b> A tabela de processos é um vetor fixo, <code>proc[NPROC]</code>, com <code>NPROC = 64</code> (<code>kernel/param.h</code>). Quando ela enche, <code>allocproc()</code> não acha entrada livre e <code>fork()</code> devolve −1 (<code>kernel/proc.c</code>). Quem já existe continua rodando; só não nascem processos novos.</p>' +
-        '<p><b>No Linux</b>, o limite de processos por usuário (<code>ulimit -u</code>, <code>RLIMIT_NPROC</code>) e o controlador <code>pids</code> do cgroup (<code>pids.max</code>) fazem <code>fork()</code> falhar com o erro <code>EAGAIN</code> antes de a máquina toda ficar sem processos.</p>' +
-        '<button class="bt bt-primario" type="button" id="fbSair">Reiniciar o sistema</button></div>' +
-      '</div></div>';
+    d.className = 'fb'; d.setAttribute('aria-label', 'Easter egg: fork bomb (só animação)');
+    d.innerHTML =
+      '<p class="so-leitor">Fork bomb de mentira: é só animação, nada travou. Esc ou o botão Reiniciar o sistema fecham.</p>' +
+      '<div class="fb-caos" aria-hidden="true">' +
+        '<div class="fb-topo"><h2>:(){ :|:&amp; };:</h2><p class="fb-cont">processos: <span class="fb-n">0</span></p></div>' +
+        '<pre class="fb-ps"></pre>' +
+      '</div>' +
+      '<div class="fb-final" hidden>' +
+        '<p class="fb-kernel"><span class="prompt">kernel$</span> alerta: sistema sem resposta<span class="cursor" aria-hidden="true">▌</span></p>' +
+        '<pre class="fb-boot"></pre>' +
+        '<div class="fb-cartao" hidden><h3>Calma: foi só um easter egg</h3>' +
+          '<p>Nada travou de verdade. Os erros, o tremor e o reboot são animação, e a sua simulação continua exatamente onde estava.</p>' +
+          '<p><code>:(){ :|:&amp; };:</code> é um <b>fork bomb</b>: define uma função chamada <code>:</code> que chama a si mesma duas vezes, ligadas por um pipe, em segundo plano. Cada cópia faz o mesmo, e o número de processos dobra a cada rodada até acabar a tabela de processos.</p>' +
+          '<p><b>No xv6 o sistema não cai.</b> A tabela de processos é um vetor fixo, <code>proc[NPROC]</code>, com <code>NPROC = 64</code> (<code>kernel/param.h</code>). Quando ela enche, <code>allocproc()</code> não acha entrada livre e <code>fork()</code> devolve −1 (<code>kernel/proc.c</code>). Quem já existe continua rodando; só não nascem processos novos.</p>' +
+          '<p><b>No Linux</b>, o limite de processos por usuário (<code>ulimit -u</code>, <code>RLIMIT_NPROC</code>) e o controlador <code>pids</code> do cgroup (<code>pids.max</code>) fazem <code>fork()</code> falhar com o erro <code>EAGAIN</code> antes de a máquina toda ficar sem processos.</p>' +
+        '</div>' +
+      '</div>' +
+      '<button class="bt bt-primario fb-sair" type="button" id="fbSair">Reiniciar o sistema</button>';
     document.body.appendChild(d);
     d.addEventListener('cancel', function (ev) { ev.preventDefault(); fechar(); });
     d.addEventListener('click', function () { if (Date.now() - abertoEm > 400) fechar(); });   // um clique fecha
     aberto = d; abertoEm = Date.now();
     if (typeof d.showModal === 'function') d.showModal(); else d.setAttribute('open', '');
-    d.querySelector('.fb-caixa').focus();
-    var chao = d.querySelector('#fbChao'), n = d.querySelector('#fbN'), total = 0;
-    function cresce(alvo) { while (total < alvo && total < MAX) chao.appendChild(cartao(total++)); n.textContent = total; }
-    function fim() {
-      d.classList.add('trava');
-      n.textContent = total + ' (tabela cheia)';
-      d.querySelector('#fbFim').hidden = false;
-      d.querySelector('#fbSair').focus();
+    var sair = d.querySelector('#fbSair');
+    sair.focus();
+
+    var caos = d.querySelector('.fb-caos'), n = d.querySelector('.fb-n'), ps = d.querySelector('.fb-ps');
+    var final = d.querySelector('.fb-final'), boot = d.querySelector('.fb-boot'), cartao = d.querySelector('.fb-cartao');
+    var BOOT = ['kernel$ reboot', 'xv6 kernel is booting', 'hart 1 starting', 'hart 2 starting', 'init: starting sh',
+                'simulador: estado intacto (passo ' + passo + ')'];
+
+    function mostraFinal(comFade) {
+      final.hidden = false;
+      if (comFade) void final.offsetWidth;              // garante a transição de opacidade
+      final.classList.add('on');
     }
-    if (reduz) { cresce(MAX); fim(); return; }        // sem movimento: tela final direto
+    function mostraCartao() {
+      d.classList.add('final');
+      cartao.hidden = false;
+      cartao.appendChild(sair);                         // o mesmo botão passa para o cartão
+      sair.focus();
+    }
+    if (reduz) {                                        // sem movimento: tela final, reboot e cartão direto
+      caos.remove();
+      boot.textContent = BOOT.join('\n');
+      mostraFinal(false); mostraCartao();
+      return;
+    }
+
+    raiz.classList.add('fb-ativo');
+    var W = d.clientWidth || window.innerWidth, H = d.clientHeight || window.innerHeight;
+
+    // Fase 1 — multiplicação: 1, 2, 4… 64 cartões, contador e "ps" rolando.
+    var total = 0;
+    function cresce(alvo) {
+      while (total < alvo && total < MAX) {
+        var k = total % 6, c = el('span', 'fb-proc', ':' + (total + 1));
+        c.setAttribute('data-forma', k);
+        c.style.cssText = '--c:var(--p' + k + ');--cs:var(--p' + k + '-suave);left:' + Math.round(sorteia(4, W - 70)) + 'px;top:' + Math.round(sorteia(4, H - 34)) + 'px';
+        caos.appendChild(c); total++;
+      }
+      n.textContent = total < MAX ? total : MAX + ' de ' + MAX + ' (tabela cheia)';
+    }
     cresce(1);
-    for (var g = 1; g <= 6; g++) (function (g) { depois(g * 450, function () { cresce(Math.pow(2, g)); }); })(g);   // 2, 4, … 64
-    depois(3200, fim);                                 // ~3,2 s de multiplicação + tremor curto ≈ 4 s
+    for (var g = 1; g <= 6; g++) (function (g) { depois(g * T.dobra, function () { cresce(Math.pow(2, g)); }); })(g);
+    var linhas = [], pid = 3, ESTADOS = ['RUNNABLE', 'RUNNING ', 'SLEEPING'];
+    for (var t = 100; t < T.congela; t += 60) depois(t, function () {
+      linhas.push(pid - 3 < MAX ? ('  ' + pid).slice(-4) + '  ' + ESTADOS[pid % 3] + '  :' : (pid % 2 ? 'fork: retry: Resource temporarily unavailable' : 'fork() = -1'));
+      pid++;
+      if (linhas.length > 13) linhas.shift();
+      ps.textContent = ' PID  ESTADO    NOME\n' + linhas.join('\n');
+    });
+
+    // Fase 2 — janelas de erro empilhadas, tortas.
+    for (var i = 0; i < 22; i++) (function (i) {
+      depois(T.erros + i * T.erroPasso, function () {
+        var w = el('div', 'fb-erro', ERROS[i % ERROS.length]), lw = Math.min(304, W - 16);
+        w.setAttribute('data-pid', 3 + MAX + i);
+        w.style.cssText = '--r:' + sorteia(-9, 9).toFixed(1) + 'deg;left:' + Math.round(sorteia(8, Math.max(8, W - lw - 8))) + 'px;top:' + Math.round(sorteia(8, Math.max(8, H - 120))) + 'px';
+        caos.appendChild(w);
+      });
+    })(i);
+
+    // Fase 3 — a interface "quebra": treme e inclina, títulos com glitch, letras trocadas,
+    // botões travados, contador de passos enlouquecido, faixas de risco e cores invertidas.
+    depois(T.quebra, function () {
+      var alvos = [], vistos = document.querySelectorAll('.marca-1, .marca-2, .niveis button, #fraseAtual, main h2, .util button');
+      for (var j = 0; j < vistos.length && alvos.length < 6; j++) {
+        var r = vistos[j].getBoundingClientRect();
+        if (visivel(r, W, H)) alvos.push({ r: r, txt: (vistos[j].textContent || '').replace(/\s+/g, ' ').trim().slice(0, 40) || '????' });
+      }
+      var cp = document.getElementById('contaPassos'), rp = cp && cp.getBoundingClientRect();
+      raiz.classList.add('fb-quebra');
+      var caixas = [];
+      alvos.forEach(function (a, j) {
+        depois(100 + j * 180, function () {
+          var b = el('span', 'fb-ruido', corrompe(a.txt));
+          b.style.cssText = 'left:' + Math.round(a.r.left) + 'px;top:' + Math.round(a.r.top) + 'px;width:' + Math.round(Math.min(a.r.width, W - a.r.left)) + 'px;height:' + Math.round(a.r.height) + 'px;font-size:' + Math.round(Math.min(26, Math.max(12, a.r.height * .6))) + 'px';
+          caos.appendChild(b); caixas.push({ b: b, txt: a.txt });
+        });
+      });
+      for (var t2 = 220; t2 < T.congela - T.quebra; t2 += 120) depois(t2, function () {
+        caixas.forEach(function (c) { c.b.textContent = corrompe(c.txt); });
+      });
+      if (rp && visivel(rp, W, H)) {
+        var bp = el('span', 'fb-ruido passo', 'Passo ' + passo);
+        bp.style.cssText = 'left:' + Math.round(rp.left) + 'px;top:' + Math.round(rp.top) + 'px;min-width:' + Math.round(rp.width) + 'px;height:' + Math.round(rp.height) + 'px';
+        caos.appendChild(bp);
+        var DOIDOS = ['NaN', '-1', '65536', '∞', '0x7fff', '-64'];
+        for (var t3 = 80; t3 < T.congela - T.quebra; t3 += 70) depois(t3, function () {
+          bp.textContent = 'Passo ' + (Math.random() < .2 ? DOIDOS[Math.floor(Math.random() * DOIDOS.length)] : Math.floor(Math.random() * 99999));
+        });
+      }
+      depois(200, function () { caos.appendChild(el('div', 'fb-fita a')); });
+      depois(500, function () { caos.appendChild(el('div', 'fb-fita b')); });
+    });
+    depois(T.inverte, function () { raiz.classList.add('fb-invertido'); });
+
+    // Fase 4 — congela, escurece e sobra o kernel$.
+    depois(T.congela, function () { raiz.classList.add('fb-congela'); d.classList.add('congela'); });
+    depois(T.escurece, function () { mostraFinal(true); });
+    depois(T.alerta, function () {                      // já está tudo preto: a página volta ao normal por baixo
+      caos.remove();
+      CLASSES.forEach(function (c) { raiz.classList.remove(c); });
+    });
+
+    // Fase 5 — reboot em texto e o cartão.
+    BOOT.forEach(function (l, j) {
+      depois(T.boot + j * T.bootPasso, function () { boot.textContent += (j ? '\n' : '') + l; });
+    });
+    depois(T.cartao, mostraCartao);
   }
 
   function fechar() {
@@ -2341,6 +2509,7 @@ var Logica = (function () {
     var d = aberto; aberto = null;
     if (d.open && typeof d.close === 'function') d.close();
     d.remove();                                        // DOM volta exatamente ao que era
+    CLASSES.forEach(function (c) { raiz.classList.remove(c); });
     if (focoAntes && document.contains(focoAntes) && focoAntes.focus) focoAntes.focus();
     var UI = window.SimuladorUI;
     if (autoEstava && UI && !UI.autoLigado()) UI.alternarAuto();

@@ -89,6 +89,8 @@ pergunta. "Reiniciar" continua sem pergunta, porque tem "Desfazer reinício".
   ele foi omitido por espaço, mas está na Ajuda.
 - O resumo dos parâmetros atuais fica sempre visível no palco ("2 processos, 2 incrementos, sem
   lock").
+- O prompt `kernel$ ▌` do rodapé mostra `help` apagado: quem não conhece o terminal vê por onde
+  começar sem precisar lembrar de nada.
 - As condições do pipe aparecem calculadas, e o grafo tem legenda.
 
 ## 7. Flexibilidade e eficiência de uso

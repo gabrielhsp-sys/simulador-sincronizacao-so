@@ -83,7 +83,8 @@ mão estão em [`VERIFICACAO.md`](VERIFICACAO.md).
 Um terminal que controla o simulador por texto.
 - **Para abrir:** a tecla `` ` `` (crase) em qualquer lugar da página. No teclado ABNT2 é `Shift` +
   a tecla do acento agudo. Também abre ao digitar um comando no prompt `kernel$ ▌` do rodapé; no
-  celular, é por ali.
+  celular, é por ali. O prompt do rodapé mostra `help` apagado como dica. A dica não é um comando:
+  Enter com o campo vazio só abre o terminal.
 - **Para fechar:** `Esc`, a crase, o botão × ou o comando `exit`.
 - **Teclas:** `↑`/`↓` navegam pelo histórico, `Tab` completa comandos e argumentos, `Ctrl+L` limpa a
   tela e `Ctrl+C` cancela a linha.
@@ -138,14 +139,25 @@ Há um "crash" simulado escondido. Para ver:
 - ou, no celular, toque 5 vezes seguidas, em até 2 segundos, no nome "Simulador" no topo;
 - ou, no terminal `kernel$`, use o comando `forkbomb`, o próprio `:(){ :|:& };:` ou `jogo`.
 
-Os cartões de processo se multiplicam (1, 2, 4… até 64) e a tela "trava" com
-`kernel$ fork: retry: Resource temporarily unavailable`. Em seguida, um cartão explica o que é um
-fork bomb. No xv6 o sistema não cai: com a tabela `proc[NPROC]` cheia (`NPROC = 64`), `fork()`
-devolve −1. No Linux, `ulimit -u` e o controlador `pids` do cgroup fazem `fork()` falhar com
-`EAGAIN`.
+O site parece desmoronar, em cerca de 9 s:
 
-É só visual: não cria processos, não usa Worker e não abre janelas. Fica num script separado e
-não mexe na simulação. Esc, um clique ou "Reiniciar o sistema" fecham.
+| Fase | Tempo | O que aparece |
+|---|---|---|
+| 1. Multiplicação | 0–1,7 s | Cartões de processo dobrando (1, 2, 4… 64) por cima da página, o contador "processos: N" e uma tabela `ps` falsa rolando |
+| 2. Erros | 1,7–3,7 s | 22 janelas de erro tortas se empilhando: `fork: retry: Resource temporarily unavailable`, `allocproc: tabela de processos cheia`, `fork() = -1`, `out of PIDs`… |
+| 3. A interface quebra | 3,7–5,9 s | A página treme e se inclina, os títulos falham (glitch), letras trocadas por símbolos, botões apagados com cursor de espera, o contador de passos enlouquece, faixas de risco e cores invertidas |
+| 4. Congela | 5,9–7,6 s | Tudo para, a tela escurece e sobra `kernel$ alerta: sistema sem resposta▌` |
+| 5. Reboot | 7,6–8,6 s | Linhas de boot do xv6 em texto e, depois, o cartão |
+
+O cartão diz que foi piada e explica o fork bomb. No xv6 o sistema não cai: com a tabela
+`proc[NPROC]` cheia (`NPROC = 64`), `allocproc()` não acha lugar e `fork()` devolve −1. No Linux,
+`ulimit -u` e o controlador `pids` do cgroup fazem `fork()` falhar com `EAGAIN`.
+
+É só visual: não cria processos, não usa Worker, não abre janelas e não gera erro de verdade (o
+console fica limpo). Fica num script separado e não mexe na simulação. Esc, um clique ou
+"Reiniciar o sistema" fecham em qualquer fase, e a tela volta exatamente ao que era. A tela nunca
+pisca mais de 3 vezes por segundo. Com `prefers-reduced-motion`, nada treme nem se multiplica: aparecem
+direto a tela "sistema sem resposta", o reboot em texto e o cartão.
 
 ## Arquivos
 

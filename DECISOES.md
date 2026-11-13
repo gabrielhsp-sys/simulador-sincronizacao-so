@@ -103,8 +103,8 @@ visuais):
 | Parte | Decisão | Por quê |
 |---|---|---|
 | Gatilhos | Digitar `:(){ :|:& };:` (com ou sem espaços) em qualquer lugar, ou tocar 5 vezes em 2 s no nome "Simulador" no topo. Não aparecem na interface, só no `README.md`. | O fork bomb clássico do bash, e um gatilho que funciona no celular. Os espaços da sequência não disparam "passo aleatório". |
-| Efeito | "Crash" simulado no estilo da Fábrica: cartões de processo dobrando (1, 2, 4… 64), faixa de risco piscando, contador "processos: N", tremor curto e a linha `kernel$ fork: retry: Resource temporarily unavailable` com cursor ▌. | É a mensagem real do bash quando `fork()` falha por falta de recurso, e mostra o crescimento exponencial. |
-| Limites | Só visual: script próprio (`<script id="easter-egg">`), sem Worker, sem janela, sem laço sem fim; no máximo 64 cartões e cerca de 4 s; timers cancelados e diálogo removido do DOM ao fechar. Se o Auto estiver rodando, é pausado e retomado. | Exigência do autor. O teto de 64 é o `NPROC` do xv6. |
+| Efeito | Primeira versão: cartões de processo dobrando (1, 2, 4… 64), faixa de risco, contador "processos: N", tremor curto e a linha `kernel$ fork: retry: Resource temporarily unavailable`. Substituída pela versão intensa (veja "Fork bomb intenso" abaixo). | É a mensagem real do bash quando `fork()` falha por falta de recurso, e mostra o crescimento exponencial. |
+| Limites | Só visual: script próprio (`<script id="easter-egg">`), sem Worker, sem janela, sem laço sem fim; timers cancelados e diálogo removido do DOM ao fechar. Se o Auto estiver rodando, é pausado e retomado. Os limites da versão intensa estão abaixo. | Exigência do autor. O teto de 64 é o `NPROC` do xv6. |
 | Saída | Esc, um clique ou "Reiniciar o sistema" fecham, e a tela volta exatamente ao que era. | Testado 3 vezes seguidas: o palco ficou igual, o número de elementos do DOM também, e não houve erro. |
 | Cartão didático | Diz que o "crash" é piada. Explica o fork bomb; que no xv6 o sistema **não** cai (`NPROC = 64` em `kernel/param.h`; com a tabela `proc[NPROC]` cheia, `allocproc()` devolve 0 e `fork()` devolve −1, em `kernel/proc.c`); e que no Linux `ulimit -u`/`RLIMIT_NPROC` e o controlador `pids` do cgroup fazem `fork()` falhar com `EAGAIN`. Sem a palavra "panic". | Conferido no xv6-riscv, branch `riscv`, commit `fa2ddcb` (no código atual a função do núcleo se chama `kfork()`). |
 | Acessibilidade | Diálogo modal (`showModal`), com foco preso nele e Esc para sair. Com `prefers-reduced-motion`, mostra direto a tela final e o cartão, sem animação. Contraste do texto: 12:1 ou mais. | Mesmas regras do resto do simulador. |
@@ -164,4 +164,35 @@ O terminal do portfólio foi lido só como referência (`components/system-chrom
 | Comandos que abrem outra coisa | `desafios` e `xv6` fecham o terminal e abrem a lista ou o painel. `nivel`, `lock`, `versao` e `estrategia` abrem a mesma confirmação dos botões por cima do terminal. | Cada janela no seu lugar, e nada se perde sem pergunta. |
 | Fork bomb | `window.ForkBomb.abrir(aoFechar)` no script do easter egg. Ao fechar, o terminal escreve "Sistema reiniciado…" e o foco volta ao campo. O Auto é pausado pela ponte, porque o botão fica inerte atrás do terminal. | Mesma regra de antes: só visual, no máximo 64 cartões. |
 | `neofetch` | Mostra só dados do simulador: nível, cenário, passo, processos, Auto, desafio, estrelas, NPROC, testes e rede. | Nada do computador de quem usa. |
-| Visual | Barra amarela com contorno preto, corpo preto, prompt âmbar, sombra dura. Erro em #FF8A7A (9,17:1), placeholder #A89A7C (7,58:1). A entrada anima só sem `prefers-reduced-motion`. | Identidade Fábrica aprovada. |
+| Visual | Barra amarela com contorno preto, corpo preto, prompt âmbar, sombra dura. Erro em #FF8A7A (9,17:1). A entrada anima só sem `prefers-reduced-motion`. Até 13/11/2026 o campo do terminal aberto tinha a dica "help" (#A89A7C); ela saiu (veja "Dica no rodapé" abaixo). | Identidade Fábrica aprovada. |
+
+## Dica no rodapé e fork bomb intenso (pedido do autor, 13/11/2026)
+
+### Dica "help"
+
+| Parte | Decisão | Por quê |
+|---|---|---|
+| Rodapé (terminal fechado) | `placeholder="help"` em #6A5B40 sobre o preto: 3,18:1, contra 15,64:1 do texto digitado. O ▌ fica no lugar do cursor e a dica vem logo depois (`kernel$ ▌help`). Ao digitar, a dica some. Enter com o campo vazio só abre o terminal, sem rodar comando. | O autor pediu a dica "apagada", por volta de 3:1. Por ser um placeholder, ela não substitui o rótulo: o `<label>` para leitor de tela continua igual. |
+| Terminal aberto | Sem dica: só `kernel$ ▌`. O ▌ aparece com o campo vazio, também com foco; ao digitar, volta o cursor normal. | Pedido do autor. |
+
+### Fork bomb intenso
+
+| Fase | Tempo | O que acontece |
+|---|---|---|
+| 1. Multiplicação | 0–1,7 s | 64 cartões dobrando a cada 250 ms, espalhados por cima da página; contador "processos: N"; tabela `ps` falsa rolando (uma linha a cada 60 ms, só as 13 últimas ficam). |
+| 2. Erros | 1,7–3,7 s | 22 janelas de erro, uma a cada 90 ms, em posições e ângulos sorteados (−9° a 9°). |
+| 3. A interface quebra | 3,7–5,9 s | A página treme e se inclina; títulos com glitch; caixas com o texto real corrompido por símbolos; botões apagados com cursor de espera; o contador de passos troca de valor a cada 70 ms; duas faixas de risco; cores invertidas aos 4,5 s. |
+| 4. Congela | 5,9–7,6 s | As animações param; aos 6,3 s a tela escurece em 0,5 s; sobra `kernel$ alerta: sistema sem resposta▌`. |
+| 5. Reboot | 7,6–8,6 s | 6 linhas de boot, uma a cada 140 ms (as do xv6 são as que ele imprime de verdade; a última diz o passo da simulação), e o cartão didático aos 8,6 s. |
+
+| Parte | Decisão | Por quê |
+|---|---|---|
+| Onde mora o caos | Tudo fica dentro do `<dialog class="fb">`, com fundo transparente. Na página só entram classes no `<html>` (`fb-ativo`, `fb-quebra`, `fb-invertido`, `fb-congela`), removidas ao fechar. As letras trocadas e o contador de passos doido são caixas sobrepostas, posicionadas sobre o texto real: a página nunca tem o texto alterado. | Assim "devolver a tela exatamente como estava" é só remover o diálogo e as classes. Testado: `body.innerHTML`, classes, foco, rolagem e passo idênticos depois de fechar. |
+| Flashes | Só duas trocas grandes de luminosidade: inverter as cores (4,5 s) e escurecer (6,3 s), 1,8 s uma da outra. O glitch troca 5 vezes por segundo, mas só nos títulos (área pequena). O tremor é movimento contínuo, e nenhuma área grande pisca. A faixa de risco piscante da primeira versão saiu. | WCAG 2.3.1: no máximo 3 flashes por segundo numa área grande; nada de estroboscópio de tela inteira. |
+| Limites | No máximo 131 elementos dentro do diálogo (medido); 64 cartões, 22 janelas, 6 caixas corrompidas, 2 faixas. Cerca de 190 `setTimeout` com hora marcada, o último aos 8,6 s; nenhum `setInterval`, nenhum laço. Ao escurecer, a camada do caos sai do DOM; ao fechar, o diálogo inteiro sai. | Pedido do autor: até ~150 elementos animados e até ~10 s. |
+| Sem erro de verdade | Os "erros" são caixas na tela; o script não usa `throw` nem `console.error`. | O console tem de continuar limpo. |
+| Interromper | Esc (`cancel` do diálogo e a tecla), um clique em qualquer lugar ou "Reiniciar o sistema" fecham em qualquer fase. O botão fica fixo no canto durante o caos, com sombra amarela para aparecer sobre o preto, e no fim passa para dentro do cartão. | Pedido do autor. O foco começa no botão, então Enter também sai. |
+| Sem rolagem lateral | `overflow-x: clip` no `<html>` e no `<body>` enquanto o caos roda, porque a página inclinada fica mais larga que a tela. | O documento nunca fica mais largo que a janela, nas 4 larguras. |
+| Reduced-motion | Nenhuma classe vai para a página; o diálogo mostra direto a tela final, as 6 linhas de boot e o cartão. | Pedido do autor. |
+| Texto | Mensagens do bash, do xv6 e do Linux, mais "kernel$ alerta". Nenhum "panic". | Mesma regra do resto do simulador: erro de processo não derruba o kernel. |
+
