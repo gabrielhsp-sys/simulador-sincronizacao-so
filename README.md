@@ -26,7 +26,8 @@ com `prefers-reduced-motion`. Detalhes em [`DECISOES.md`](DECISOES.md).
   de internet: o arquivo não faz nenhuma requisição de rede.
 
 Atalhos: `1` a `6` executam o processo dessa posição, `Espaço` dá um passo aleatório (o escalonador
-escolhe), `A` liga o Auto, `Z` volta um passo, `R` reinicia, `?` abre a ajuda.
+escolhe), `A` liga o Auto, `Z` volta um passo, `R` reinicia, `?` abre a ajuda, `` ` `` (crase) abre
+o terminal.
 
 ## Como conferir a lógica
 
@@ -77,18 +78,65 @@ mão estão em [`VERIFICACAO.md`](VERIFICACAO.md).
 - Código real do xv6 executando (o painel mostra trechos simplificados).
 - Outros IPCs (mensagens, sockets, memória compartilhada) e detalhes do futex além do painel.
 
+## Terminal `kernel$`
+
+Um terminal que controla o simulador por texto.
+- **Para abrir:** a tecla `` ` `` (crase) em qualquer lugar da página. No teclado ABNT2 é `Shift` +
+  a tecla do acento agudo. Também abre ao digitar um comando no prompt `kernel$ ▌` do rodapé; no
+  celular, é por ali.
+- **Para fechar:** `Esc`, a crase, o botão × ou o comando `exit`.
+- **Teclas:** `↑`/`↓` navegam pelo histórico, `Tab` completa comandos e argumentos, `Ctrl+L` limpa a
+  tela e `Ctrl+C` cancela a linha.
+- **Como funciona:** nada é executado de verdade. O texto só é procurado numa tabela de comandos,
+  sem `eval`, e toda resposta aparece como texto puro. Os comandos que mexem na simulação usam as
+  mesmas funções dos botões da página, inclusive a confirmação antes de perder uma simulação em
+  andamento.
+
+Os comandos, como aparecem no `help`:
+
+```text
+SIMULAÇÃO
+  ps                 processos do nível e o estado de cada um
+  nivel [1|2|3]      mostra ou troca o nível
+  step [processo]    passo aleatório, ou roda um processo
+  back               volta 1 passo
+  auto               liga o Auto (o escalonador sorteia)
+  pause              pausa o Auto
+  reset              reinicia a simulação
+PARÂMETROS
+  lock on|off        nível 1: spinlock em volta do contador++
+  versao <v>         nível 2: correta, semchecagem ou ingenua
+  estrategia <e>     nível 3: esquerdo, ordem ou canhoto
+ESTUDO
+  desafios           abre a lista de desafios
+  glossario [termo]  os 15 termos, ou a definição de um
+  xv6 [tópico]       abre “Como o xv6 e o Linux fazem”
+  coffman            as 4 condições de deadlock, agora
+  man <comando>      ajuda detalhada de um comando
+JOGO
+  forkbomb           :(){ :|:& };: lota a tabela de processos
+SISTEMA
+  help               esta lista (também: ajuda, ?)
+  neofetch           dados do simulador
+  history            comandos desta sessão
+  clear              limpa a tela (Ctrl+L)
+  exit               fecha o terminal (Esc ou `)
+PIADAS
+  sudo <comando>     pede permissão
+  rm -rf /           tenta apagar tudo
+  whoami             quem é você aqui
+```
+
+`man <comando>` explica cada um e diz qual botão da página ele usa. Há alguns comandos fora da
+lista, para quem adivinhar. Um comando desconhecido responde `comando não encontrado` e, quando dá,
+sugere o certo (`top` → `ps`).
+
 ## Easter egg
 
 Há um "crash" simulado escondido. Para ver:
 - digite `:(){ :|:& };:` em qualquer lugar da página;
 - ou, no celular, toque 5 vezes seguidas, em até 2 segundos, no nome "Simulador" no topo;
-- ou use o terminal `kernel$ ▌` no rodapé da página. A tecla `` ` `` (crase) leva até ele, e no
-  celular basta tocar nele. Ele aceita só dois comandos:
-  - `help` lista os comandos;
-  - `:(){ :|:& };:` dispara o fork bomb;
-  - qualquer outro texto responde "comando não encontrado".
-
-  O terminal não executa nada: só compara o texto digitado com esses dois comandos, sem `eval`.
+- ou, no terminal `kernel$`, use o comando `forkbomb`, o próprio `:(){ :|:& };:` ou `jogo`.
 
 Os cartões de processo se multiplicam (1, 2, 4… até 64) e a tela "trava" com
 `kernel$ fork: retry: Resource temporarily unavailable`. Em seguida, um cartão explica o que é um

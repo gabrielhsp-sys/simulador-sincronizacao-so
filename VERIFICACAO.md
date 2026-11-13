@@ -314,3 +314,27 @@ A lógica e os testes não mudaram.
 
 Não testado: teclado ABNT2 de verdade (o headless só simula o evento da tecla morta) e leitor de
 tela de verdade.
+
+## Terminal kernel$ ampliado (13/11/2026)
+
+A lógica e os testes não mudaram. A interface ganhou só a ponte `window.SimuladorUI` e a função
+`aplicarParametros`, que o "Aplicar e reiniciar" também usa.
+
+| Critério | Resultado | Evidência |
+|---|---|---|
+| Testes da lógica | PASS | `node --test`: `# pass 18`, `# fail 0`; `<script id="logica">` idêntico ao commit anterior; `tests/` sem diferença |
+| Cada comando ao menos uma vez | PASS | Teste no Edge headless: `help`, `ajuda`, `?`, `man` (com e sem argumento), `ps`, `nivel` (lista, 2, `filosofos`, 9), `step` (aleatório, `P1`, `P9`, `F0` bloqueado), `back`, `auto`, `pause`, `reset`, `lock` (on, off, sem argumento, inválido, no nível errado), `versao` (`ingênua`, sem argumento, no nível errado), `estrategia`, `desafios`, `glossario` (lista, `dead`, `lock`, `co`, inexistente), `xv6` (outro nível, desconhecido, `lockdep`), `coffman` (sem e com deadlock), `forkbomb`, `neofetch`, `history`, `clear`, `exit`, `sudo`, `sudo rm -rf /`, `rm -rf /`, `whoami`, `snake`, `ls`, `top` (palpite) e `contato`/`cv`/`projetos` (não existem). |
+| Mesmas funções dos botões | PASS | `lock off` com simulação no passo 2 abriu "Você vai perder a simulação atual (passo 2)"; Cancelar manteve o lock e o passo; Continuar aplicou. `estrategia ordem` com deadlock na tela também pediu confirmação. `coffman` deu o mesmo ciclo do palco (F0 → G1 → … → G0 → F0). |
+| Atalhos da página | PASS | `1`, `a` e Espaço digitados no campo não deram passo nem ligaram o Auto. |
+| Teclas do terminal | PASS | Crase abre e fecha (também de dentro do campo); Esc e `exit` fecham; ↑/↓ percorrem o histórico; Tab completa `neo` → `neofetch` e `versao s` → `versao semchecagem`, lista as opções quando há mais de uma e, com o campo vazio, não prende o foco; Ctrl+L limpa; Ctrl+C escreve `^C` e limpa a linha. |
+| Prompt do rodapé | PASS | `ps` digitado no rodapé abriu o terminal e rodou o comando. |
+| Fork bomb 3 vezes | PASS | `forkbomb`, `:(){ :|:& };:` e `jogo`: 64 cartões; "Reiniciar o sistema" fecha, o terminal escreve "Sistema reiniciado…" e o foco volta ao campo; o passo da simulação não mudou. Os gatilhos antigos (sequência no teclado e 5 toques) continuaram funcionando. |
+| Texto com HTML | PASS | `<img src=x onerror=alert(1)>` virou texto; nenhum `<img>` foi criado. Nenhum `eval(`, `new Function` ou `innerHTML` no script do terminal. |
+| Leitor de tela | PASS | Campo com label ("kernel$ comando (help lista todos)") e dica (`aria-describedby`); `role="status"` recebe só a última resposta (depois de `ps`, só a saída do `ps`). |
+| Sem rolagem horizontal | PASS | Com o terminal aberto mostrando `help`, `neofetch` e `ps`: `scrollWidth == clientWidth` em 1280, 1366, 1920 e "480" (477 px); o log não rola na horizontal. Nos 3 níveis, sem o terminal: igual, e 0 linhas de código quebradas. |
+| "Executar" do nível 3 acima da dobra em 1366 × 768 | PASS | 568 px com 5 filósofos e 635 px com 6, para 676 px visíveis (igual à rodada anterior). |
+| Contraste | PASS | Erro #FF8A7A sobre preto 9,17:1; placeholder #A89A7C 7,58:1; texto branco e âmbar, 12:1 ou mais; barra preta sobre amarelo 13,08:1. |
+| Reduced-motion | PASS | A entrada do terminal só anima sem `prefers-reduced-motion`; com `--force-prefers-reduced-motion`, ele aparece pronto. |
+| Erros de JavaScript | PASS | 0 em todos os testes acima. |
+
+Não testado: leitor de tela de verdade, teclado ABNT2 físico e celular de verdade.

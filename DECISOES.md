@@ -108,6 +108,60 @@ visuais):
 | Saída | Esc, um clique ou "Reiniciar o sistema" fecham, e a tela volta exatamente ao que era. | Testado 3 vezes seguidas: o palco ficou igual, o número de elementos do DOM também, e não houve erro. |
 | Cartão didático | Diz que o "crash" é piada. Explica o fork bomb; que no xv6 o sistema **não** cai (`NPROC = 64` em `kernel/param.h`; com a tabela `proc[NPROC]` cheia, `allocproc()` devolve 0 e `fork()` devolve −1, em `kernel/proc.c`); e que no Linux `ulimit -u`/`RLIMIT_NPROC` e o controlador `pids` do cgroup fazem `fork()` falhar com `EAGAIN`. Sem a palavra "panic". | Conferido no xv6-riscv, branch `riscv`, commit `fa2ddcb` (no código atual a função do núcleo se chama `kfork()`). |
 | Acessibilidade | Diálogo modal (`showModal`), com foco preso nele e Esc para sair. Com `prefers-reduced-motion`, mostra direto a tela final e o cartão, sem animação. Contraste do texto: 12:1 ou mais. | Mesmas regras do resto do simulador. |
-| Terminal do rodapé (pedido do autor, 13/11/2026) | Um campo `kernel$ ▌` sempre visível no rodapé, que a tecla `` ` `` foca. Aceita `help`, o fork bomb e responde "comando não encontrado" ao resto. O texto é só comparado, nunca executado (sem `eval`), e a resposta entra como texto (`textContent`), nunca como HTML. | Um terceiro gatilho que se descobre sozinho. Sempre visível em vez de escondido atrás da tecla, porque no celular não há crase. |
+| Terminal do rodapé (pedido do autor, 13/11/2026) | Um campo `kernel$ ▌` sempre visível no rodapé. Primeira versão: aceitava só `help` e o fork bomb. Foi ampliado logo depois; veja "Terminal kernel$" abaixo. | Um terceiro gatilho que se descobre sozinho. Sempre visível, porque no celular não há crase. |
 | Crase no teclado ABNT2 | Além de `` ` ``, o atalho aceita a tecla morta (`Dead` com `Shift` na tecla do acento). Crases que caem no campo são removidas. | No ABNT2 a crase é tecla morta e pode vir colada à próxima letra. |
 | Acessibilidade do terminal | `<label>` com "kernel$" e um texto para leitor de tela ("terminal de brincadeira: digite help e Enter"). A resposta fica numa região `role="status"`. O contorno de foco é desenhado no terminal inteiro. O cursor ▌ só pisca sem `prefers-reduced-motion`. | Texto 12,2:1 e 15,6:1 sobre preto; contorno de foco 4,14:1 sobre o amarelo. |
+
+## Terminal kernel$ (pedido do autor, 13/11/2026; modelo: o terminal do portfólio do autor)
+
+O terminal do portfólio foi lido só como referência (`components/system-chrome.tsx` e
+`components/snake.tsx`), sem alterar nada lá. Nada de conteúdo pessoal veio junto.
+
+### Inventário do portfólio e destino de cada item
+
+| No portfólio | O que faz | Destino aqui |
+|---|---|---|
+| `help`, `ajuda`, `?` | Lista os comandos em colunas e termina com "Tem coisa que não está nessa lista. Tente adivinhar." | ADAPTAR: mesmo formato, agrupado por categoria |
+| `projetos`, `ls` | Lista os projetos do índice do site | FORA (projetos pessoais). `ls` virou um comando oculto que lista os 3 níveis |
+| `abrir <slot>`, `arquivo` | Abrem um estudo de caso ou a lista de projetos | FORA |
+| `contato` | Copia o e-mail e mostra as redes | FORA |
+| `cv` | Currículo em uma tela | FORA |
+| `busca <termo>` | Abre a busca do site | FORA (não há busca aqui) |
+| `sobre`, `whoami` | Bio e página "sobre" | FORA o conteúdo; `whoami` virou piada sem dado pessoal ("escalonador") |
+| `theme` | Liga o modo retrô | FORA (a identidade aprovada é a Fábrica) |
+| `som` | Liga os bipes | FORA (o simulador não tem som) |
+| `snake`, `jogo` | Jogo dentro do terminal | ADAPTAR: o fork bomb ocupa esse papel (`forkbomb`, `:(){ :|:& };:`, `jogo`); `snake` ficou oculto e aponta para `forkbomb` |
+| `sudo <x>` | "visitante não está no arquivo sudoers" | PIADA, mantida sem dado pessoal |
+| `sudo rm …` | "Boa tentativa." | PIADA, mantida (também como `rm -rf /`) |
+| `sudo hire …` | Abre o contato e copia o e-mail | FORA |
+| `kernel` (só no modo retrô) | Segredo com dados pessoais | FORA |
+| `clear`, `limpar` | Volta às boas-vindas | ADAPTAR (igual) |
+| `sair`, `exit`, `close`, `q` | Fecha o terminal | ADAPTAR (igual) |
+| Palpites ("Você quis dizer…?") | `cat` → `sobre`, `man` → `help`, `git` → `contato`… | ADAPTAR com palpites de SO: `top` → `ps`, `cd` → `nivel`, `cat` → `man`, `kill` → `reset`… |
+| Recado no console com o e-mail | | FORA |
+
+### Recursos do terminal
+
+| Recurso | No portfólio | Aqui |
+|---|---|---|
+| Overlay | Janela flutuante modal (`role="dialog"`, `aria-modal`), com o resto da página inerte | Igual, com `<dialog>` nativo (`showModal`). O fundo escurece pouco para o palco continuar visível enquanto `step` roda |
+| Abrir | Crase ou til, inclusive a tecla morta do ABNT2, e botões | Crase, inclusive a tecla morta do ABNT2. O prompt do rodapé continua: o comando digitado ali abre o terminal e roda |
+| Fechar | Esc, ×, `exit`, crase fora de campo | Esc, ×, `exit` e a crase, também dentro do campo |
+| Boas-vindas | 3 linhas | 3 linhas, no mesmo formato |
+| Histórico | ↑/↓, o mais novo primeiro | Igual, e mais o comando `history` |
+| Tab | Só prende o foco na janela; **não completa** | **Acréscimo:** com texto no campo, completa comandos e argumentos; com o campo vazio, o Tab segue o foco normalmente (sem prender o teclado) |
+| Ctrl+L, Ctrl+C | **Não existem** | **Acréscimos:** Ctrl+L limpa; Ctrl+C cancela a linha (só sem texto selecionado, para não atrapalhar copiar) |
+| Erro | "comando não encontrado: X" + palpite ou "Digite `help`." | Igual |
+| Leitor de tela | O log inteiro é `aria-live` | Só a última resposta vai para uma região `role="status"`; o log não é anunciado |
+
+### Decisões de implementação
+
+| Parte | Decisão | Por quê |
+|---|---|---|
+| Ponte com a interface | `window.SimuladorUI`, definida no fim do `<script id="interface">`. Cada ação chama a mesma função do botão: `executar`, `proximoAleatorio`, `alternarAuto`, `voltar`, `reiniciar`, `trocarNivel` com `confirmarPerda`, e `aplicarParametros` (extraída do "Aplicar e reiniciar", que agora também a usa). As leituras devolvem o que a tela mostra. | O terminal não toca em `Logica` nem no estado por outro caminho. `<script id="logica">` e `tests/` não mudaram. |
+| Segurança | Sem `eval`, sem `new Function`, sem `innerHTML` no terminal; tudo entra por `textContent`. Sem rede e sem armazenamento: o histórico vive só na aba. | Texto digitado é dado, nunca código. |
+| Atalhos da página | O `keydown` dentro do terminal não chega aos atalhos (`1`–`6`, `A`, Espaço…). | Digitar `a` num comando não pode ligar o Auto. |
+| Comandos que abrem outra coisa | `desafios` e `xv6` fecham o terminal e abrem a lista ou o painel. `nivel`, `lock`, `versao` e `estrategia` abrem a mesma confirmação dos botões por cima do terminal. | Cada janela no seu lugar, e nada se perde sem pergunta. |
+| Fork bomb | `window.ForkBomb.abrir(aoFechar)` no script do easter egg. Ao fechar, o terminal escreve "Sistema reiniciado…" e o foco volta ao campo. O Auto é pausado pela ponte, porque o botão fica inerte atrás do terminal. | Mesma regra de antes: só visual, no máximo 64 cartões. |
+| `neofetch` | Mostra só dados do simulador: nível, cenário, passo, processos, Auto, desafio, estrelas, NPROC, testes e rede. | Nada do computador de quem usa. |
+| Visual | Barra amarela com contorno preto, corpo preto, prompt âmbar, sombra dura. Erro em #FF8A7A (9,17:1), placeholder #A89A7C (7,58:1). A entrada anima só sem `prefers-reduced-motion`. | Identidade Fábrica aprovada. |

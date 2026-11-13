@@ -309,7 +309,7 @@ Dois cuidados nos documentos:
 | Revisão de UI | A ação principal ("Executar") estava com estilo secundário; havia heading sem seção, abas sem painel e anúncios demais no modo Auto. | As quatro correções foram aprovadas e aplicadas (prompt 4). |
 
 
-## Rodada de interface e acabamento (prompts 5 a 10)
+## Rodada de interface e acabamento (prompts 5 a 11)
 
 A primeira interface foi reprovada pelo autor. Os prompts abaixo conduziram:
 - o redesenho;
@@ -747,6 +747,75 @@ Acrescente um terminal discreto ao easter egg, sem remover os gatilhos atuais:
   horizontal nas 4 larguras.
 - Atualize o README.md (seção Easter egg) e o VIDEO.md (mostrar o terminal no fim).
 - Commit e push na main, sem --force. Confirme o Pages com curl -sI (200).
+```
+
+</details>
+
+<details>
+<summary>Prompt 11 — terminal kernel$ no modelo do terminal do portfólio</summary>
+
+```markdown
+Expandir o terminal kernel$ do simulador, tomando como modelo o terminal do portfólio do autor.
+O autor aprovou o visual atual: o terminal continua com o estilo Fábrica de Processos.
+
+## Fonte do modelo (SOMENTE leitura)
+[pasta do portfólio do autor] (portfólio do autor). Não altere, não faça commit,
+não rode build nem instale nada lá. Use grep e leitura para achar o terminal dele.
+
+## 1. Inventário (antes de escrever código)
+Liste, a partir do código do portfólio:
+- cada comando: nome, o que faz, argumentos;
+- os recursos do terminal: histórico com ↑/↓, autocompletar com Tab, atalhos (Ctrl+L, Ctrl+C…),
+  como abre e fecha, se é overlay ou fixo, mensagens de boas-vindas e de erro;
+- o jogo da cobrinha: como é chamado e como o terminal o apresenta.
+Para cada comando, classifique: ADAPTAR ao tema de SO · PIADA (manter, sem dado pessoal) · FORA
+(conteúdo pessoal: bio, contato, projetos, redes, e-mail, nome do autor; nunca entra, porque o
+repositório é público e o trabalho é do grupo).
+
+## 2. Implementação
+- Os recursos do terminal do portfólio (histórico, Tab, atalhos, boas-vindas, formato do help)
+  passam a existir no kernel$, com o visual Fábrica.
+- Se lá o terminal for um overlay aberto por atalho, faça igual e mantenha também o prompt no
+  rodapé.
+- O fork bomb ocupa o papel da cobrinha: aparece no help como o "jogo"/destaque do terminal,
+  chamado por forkbomb e por :(){ :|:& };:. Os gatilhos atuais continuam funcionando.
+- Comandos de SO. Use os que fizerem sentido; os nomes ficam a seu critério, desde que coerentes:
+  - help (lista tudo, agrupado por categoria) e man <comando>;
+  - ps (processos do nível atual e o estado de cada um);
+  - nivel 1|2|3; step / step <processo>; auto; pause; reset;
+  - lock on|off no nível 1; versao no nível 2; estrategia no nível 3;
+  - desafios; glossario [termo]; xv6 [tópico] (abre o painel "Como o xv6 e o Linux fazem");
+    coffman;
+  - neofetch (dados do simulador, não do computador do usuário);
+  - piadas no estilo do portfólio, como sudo, rm -rf /, exit, sem dado pessoal;
+  - clear; history.
+- Comandos que mexem na simulação chamam as MESMAS funções que os botões da interface, incluindo
+  a confirmação antes de descartar uma simulação em andamento. Nunca acesse ou altere a lógica
+  por fora.
+- Segurança: nada de eval nem innerHTML com texto do usuário; a saída é texto puro. Sem rede.
+- Acessibilidade: o campo tem label, a saída tem role="status" (sem enxurrada: anuncie só a
+  última resposta), operável pelo teclado, AA, reduced-motion.
+
+## 3. Restrições
+- Não altere <script id="logica"> nem tests/: 18/18.
+- Sem rolagem horizontal em 1280, 1366, 1920 e ~480 px; executar do nível 3 acima da dobra em
+  1366×768; nenhum erro de JavaScript (teste cada comando pelo menos uma vez, e o fork bomb 3
+  vezes).
+- Digitar no terminal não pode disparar os atalhos de teclado da página (1, 2, A…).
+- Commit e push na main de [login do autor]/simulador-sincronizacao-so, sem --force. Confirme o
+  Pages com curl -sI (200) e abrindo no Edge sem erro no console.
+- Atualize README.md (seção Terminal com a lista de comandos), VIDEO.md (trecho do terminal),
+  DECISOES.md e PROMPTS.md (este pedido, sanitizado).
+
+## 4. Relatório
+- Tabela do inventário do portfólio com o destino de cada comando (ADAPTAR/PIADA/FORA).
+- A lista final de comandos do kernel$ como aparece no help.
+- Critérios e links.
+
+## Pare e pergunte
+- Se não achar o terminal no repositório do portfólio: diga onde procurou e PARE.
+- Algo que exija tocar na lógica, nos testes ou no repositório do portfólio.
+- Push recusado.
 ```
 
 </details>

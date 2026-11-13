@@ -99,6 +99,8 @@ pergunta. "Reiniciar" continua sem pergunta, porque tem "Desfazer reinício".
 - **Modo "Apresentar"**: fonte maior, tela cheia, cenário padrão, e o código e o histórico saem da
   tela.
 - **Desafios opcionais** e parâmetros para explorar.
+- **Terminal `kernel$`** (crase): os mesmos controles por texto, com histórico (↑/↓), Tab para
+  completar e `man` para cada comando.
 
 ## 8. Design estético e minimalista
 

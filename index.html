@@ -326,7 +326,35 @@ html.apresentacao .frase { font-size: 1.45rem; }
 .term-campo input:focus-visible { outline: none; }   /* o contorno fica no terminal inteiro (:focus-within) */
 .term-campo .cursor { position: absolute; left: 0; top: 0; color: var(--kernel-prompt); pointer-events: none; }
 .terminal:focus-within .cursor, .term-campo input:not(:placeholder-shown) ~ .cursor { display: none; }
-.term-saida { margin: 0 0 .3rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* overlay do terminal (aberto pela crase ou pelo prompt do rodapé) */
+dialog.term { position: fixed; inset: auto 1rem calc(1rem + env(safe-area-inset-bottom, 0px)) auto; margin: 0; padding: 0;
+  width: min(42rem, calc(100vw - 2rem)); max-height: min(74vh, 38rem); flex-direction: column; overflow: hidden;
+  background: var(--kernel-fundo); color: var(--kernel-texto); border: 4px solid var(--tinta); box-shadow: 8px 8px 0 var(--tinta);
+  font: 700 .92rem/1.45 var(--mono); }
+dialog.term[open] { display: flex; }
+dialog.term::backdrop { background: rgba(17,17,17,.12); }
+body:has(dialog.term[open]) .ir-baixo { display: none; }   /* o link fixo não aparece por baixo do terminal */
+.term-barra { flex: none; display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .25rem .3rem .25rem .7rem;
+  background: var(--amarelo); color: var(--tinta); border-bottom: 4px solid var(--tinta); }
+.term-barra h2 { font: 900 .95rem var(--mono); }
+.term-fechar { width: 2.5rem; height: 2.5rem; flex: none; border: 3px solid var(--tinta); background: #fff; color: var(--tinta); font: 900 1.3rem/1 var(--pesado); }
+.term-fechar:hover { background: var(--tinta); color: var(--amarelo); }
+.term-log { flex: 1 1 auto; min-height: 8rem; overflow-y: auto; overscroll-behavior: contain; padding: .7rem .9rem .3rem; }
+.term-log p { margin: 0 0 .2rem; white-space: pre-wrap; overflow-wrap: anywhere; }
+.term-log p:empty { min-height: .7em; }
+.term-log [data-tipo="in"] { color: #FFFFFF; }
+.term-log [data-tipo="good"] { color: var(--kernel-prompt); }
+.term-log [data-tipo="err"] { color: #FF8A7A; }
+.term-log .prompt { color: var(--kernel-prompt); }
+.term-prompt { flex: none; border-top: 2px solid #4A4A4A; padding: .55rem .9rem .7rem; }
+.term-prompt:focus-within { box-shadow: inset 0 0 0 3px var(--kernel-prompt); }
+.term-prompt input { flex: 1; min-width: 0; background: transparent; border: 0; padding: 0; color: #FFFFFF; caret-color: var(--kernel-prompt); font: 700 1rem var(--mono); }
+.term-prompt input:focus-visible { outline: none; }
+.term-prompt input::placeholder { color: #A89A7C; opacity: 1; }
+@media (max-width: 520px) {
+  dialog.term { inset: auto .5rem calc(.5rem + env(safe-area-inset-bottom, 0px)) auto; width: calc(100vw - 1rem); max-height: 68vh; }
+}
 
 /* ---------- movimento (desligado com prefers-reduced-motion) ---------- */
 @media (prefers-reduced-motion: no-preference) {
@@ -350,6 +378,8 @@ html.apresentacao .frase { font-size: 1.45rem; }
   .grade.tremor .eventos li:not(.giro) { animation: carimbo .5s cubic-bezier(.2,.9,.3,1); }
   @keyframes carimbo { from { transform: scale(1.6) rotate(-8deg); opacity: 0; } }
   .alerta-kernel .cursor, .term-campo .cursor { animation: pisca 1s steps(1) infinite; }
+  dialog.term[open] { animation: term-entra .22s cubic-bezier(.2,.9,.3,1); }
+  @keyframes term-entra { from { transform: translateY(24px); opacity: 0; } }
   @keyframes pisca { 50% { opacity: 0; } }
 }
 .coffman-tit { width: 100%; text-align: center; font: 900 .95rem var(--pesado); margin-top: .3rem; }
@@ -494,16 +524,28 @@ dialog.fb::backdrop { background: var(--tinta); }
 </main>
 <footer class="rodape">
   <form class="terminal" id="terminal" autocomplete="off">
-    <p class="term-saida" id="termSaida" role="status" aria-live="polite" hidden></p>
     <div class="term-linha">
-      <label for="termEntrada"><span class="prompt">kernel$</span><span class="so-leitor"> terminal de brincadeira: digite help e Enter</span></label>
+      <label for="termEntrada"><span class="prompt">kernel$</span><span class="so-leitor"> terminal do simulador: digite help e Enter</span></label>
       <span class="term-campo">
-        <input id="termEntrada" name="cmd" type="text" maxlength="60" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder=" " aria-keyshortcuts="`">
+        <input id="termEntrada" name="cmd" type="text" maxlength="80" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder=" " aria-keyshortcuts="`">
         <span class="cursor" aria-hidden="true">▌</span>
       </span>
     </div>
   </form>
 </footer>
+<dialog class="term" id="dlgTerminal" aria-labelledby="termTitulo">
+  <div class="term-barra">
+    <h2 id="termTitulo">kernel$ — tty1</h2>
+    <button class="term-fechar" type="button" id="termFechar" aria-label="Fechar terminal">×</button>
+  </div>
+  <div class="term-log" id="termLog"></div>
+  <p class="so-leitor" role="status" id="termStatus"></p>
+  <form class="term-linha term-prompt" id="termForm" autocomplete="off">
+    <label for="termCmd"><span class="prompt">kernel$</span><span class="so-leitor"> comando (help lista todos)</span></label>
+    <input id="termCmd" name="cmd" type="text" maxlength="80" spellcheck="false" autocapitalize="off" autocorrect="off" enterkeyhint="send" placeholder="help" aria-describedby="termDica">
+    <span class="so-leitor" id="termDica">Seta para cima e para baixo: histórico. Tab: completa. Esc ou crase: fecha.</span>
+  </form>
+</dialog>
 <a class="ir-baixo" id="irBaixo" href="#baixo" hidden>↓ Linha do tempo e código</a>
 
 <!-- ======================= DIÁLOGOS ======================= -->
@@ -2047,10 +2089,13 @@ var Logica = (function () {
   $('btVoltar').onclick = voltar;
   $('btReiniciar').onclick = reiniciar;
   $('velocidade').onchange = function () { app.velocidade = parseFloat(this.value); };
+  // "Aplicar e reiniciar" (e os comandos lock/versao/estrategia do terminal) passam por aqui.
+  function aplicarParametros(novos) {
+    confirmarPerda(function () { app.params[app.nivel] = novos; $('dlgParams').close(); iniciar(); });
+  }
   $('formParams').addEventListener('submit', function (ev) {
     ev.preventDefault();
-    var novos = lerFormulario();
-    confirmarPerda(function () { app.params[app.nivel] = novos; $('dlgParams').close(); iniciar(); });
+    aplicarParametros(lerFormulario());
   });
   $('formParams').addEventListener('change', function (ev) { if (ev.target.id === 'campo-versao') ajustarIngenua(); });
   $('btDesafios').onclick = function () { desenharListaDesafios(); abrir('dlgDesafios'); };
@@ -2122,6 +2167,68 @@ var Logica = (function () {
     ev.preventDefault(); $('baixo').scrollIntoView({ block: 'start' }); $('baixo').focus({ preventScroll: true }); atualizarLinkBaixo();
   });
 
+  /* =================== PONTE PARA O TERMINAL kernel$ ===================
+     O terminal (script "easter-egg") só usa isto. Cada ação chama a MESMA
+     função do botão correspondente, inclusive a confirmação antes de perder
+     uma simulação em andamento. As leituras devolvem o que a tela já mostra;
+     nada aqui altera Logica nem o estado por outro caminho. */
+  window.SimuladorUI = Object.freeze({
+    nivel: function () { return { id: app.nivel, numero: NIVEIS.indexOf(app.nivel) + 1, titulo: TITULOS[app.nivel][0] }; },
+    niveis: function () { return NIVEIS.map(function (nv, i) { return { id: nv, numero: i + 1, titulo: TITULOS[nv][0] }; }); },
+    passo: function () { return E().passos; },
+    emAndamento: function () { return app.hist.length > 1; },
+    desafio: function () { return app.desafio ? app.desafio.id + ': ' + app.desafio.titulo : null; },
+    autoLigado: function () { return !!app.autoTimer; },
+    velocidade: function () { return app.velocidade; },
+    resumoParams: resumoParams,
+    params: function () { return JSON.parse(JSON.stringify(app.params[app.nivel])); },
+    processos: function () {                       // o mesmo texto de estado dos cartões
+      var e = E(), ex = N().executaveis(e);
+      return e.procs.map(function (p, i) { return { nome: p.nome, forma: i % 6, estado: estadoProc(p)[1], pode: ex.indexOf(i) >= 0 }; });
+    },
+    coffman: function () {                         // as mesmas 4 condições do palco do nível 3
+      if (app.nivel !== 'filosofos') return null;
+      var s = N().situacao(E()), c = s.coffman;
+      return { exclusaoMutua: c.exclusaoMutua, posseEEspera: c.posseEEspera, naoPreempcao: c.naoPreempcao, esperaCircular: c.esperaCircular,
+               ciclo: s.ciclo ? s.ciclo.slice() : null };
+    },
+    narracao: function () {                        // o que a faixa de narração mostra agora
+      return { frase: $('fraseAtual').textContent, alerta: $('alertaKernel').hidden ? '' : 'kernel$ ' + $('alertaTxt').textContent };
+    },
+    estrelas: function () {
+      var prog = progresso(), total = 0;
+      Logica.desafios.forEach(function (d) { total += prog[d.id] || 0; });
+      return { feitas: total, maximo: Logica.desafios.length * 3 };
+    },
+    glossario: function () { return GLOSSARIO.map(function (g) { return [g[0], g[1]]; }); },
+    // ações: as mesmas funções dos botões
+    executar: function (i) { executar(i); },                       // "Executar Px"
+    passoAleatorio: function () { proximoAleatorio(); },           // "Passo aleatório"
+    alternarAuto: function () { alternarAuto(); },                 // "Auto" / "Pausar"
+    voltar: function () { voltar(); },                             // "Voltar 1 passo"
+    reiniciar: function () { reiniciar(); },                       // "Reiniciar"
+    trocarNivel: function (nv) {                                   // abas de nível
+      if (nv === app.nivel) return 'mesmo';
+      var pergunta = app.hist.length > 1;
+      confirmarPerda(function () { trocarNivel(nv); });
+      return pergunta ? 'confirmar' : 'feito';
+    },
+    aplicarParams: function (mudancas) {                           // "Ajustar" + "Aplicar e reiniciar"
+      if (app.desafio) return 'desafio';
+      var novos = JSON.parse(JSON.stringify(app.params[app.nivel]));
+      Object.keys(mudancas).forEach(function (k) { novos[k] = mudancas[k]; });
+      if (app.nivel === 'pipe' && novos.versao === 'ingenua') { novos.produtores = 1; novos.consumidores = 1; }
+      var pergunta = app.hist.length > 1;
+      aplicarParametros(novos);
+      return pergunta ? 'confirmar' : 'feito';
+    },
+    abrirDesafios: function () { desenharListaDesafios(); abrir('dlgDesafios'); },   // botão "Desafios"
+    abrirPainelSO: function () {                                   // "Como o xv6 e o Linux fazem"
+      var d = $('painelSOBox'); d.open = true; d.scrollIntoView({ block: 'start' });
+      d.querySelector('summary').focus({ preventScroll: true });
+    }
+  });
+
   /* =================== INÍCIO =================== */
   $('gloLista').innerHTML = GLOSSARIO.map(function (g) { return '<dt>' + g[0] + '</dt><dd>' + g[1] + '</dd>'; }).join('');
   desenharFormulario(); desenharPainelSO(); desenharTotalEstrelas();
@@ -2136,12 +2243,10 @@ var Logica = (function () {
    - no máximo 64 cartões na tela e ~4 s de animação, com timers finitos;
    - ao fechar, o diálogo é removido do DOM e os timers são cancelados;
    - não toca em Logica nem no estado da simulação. Se o Auto estiver
-     rodando, ele é pausado pelo próprio botão e retomado ao fechar.
-   Gatilhos (documentados só no README): digitar :(){ :|:& };: em
-   qualquer lugar, tocar 5 vezes em 2 s no nome "Simulador" no topo,
-   ou mandar o mesmo texto no terminal "kernel$" do rodapé (tecla `).
-   O terminal só compara o texto com 2 comandos fixos (help e o fork
-   bomb); não executa nada e não usa eval.
+     rodando, ele é pausado pela mesma função do botão e retomado ao fechar.
+   Gatilhos (documentados no README): digitar :(){ :|:& };: em qualquer
+   lugar, tocar 5 vezes em 2 s no nome "Simulador" no topo, ou os
+   comandos forkbomb e :(){ :|:& };: no terminal kernel$ (script abaixo).
    ===================================================================== */
 (function () {
   'use strict';
@@ -2160,11 +2265,6 @@ var Logica = (function () {
     if (ev.ctrlKey || ev.metaKey || ev.altKey || tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
     if (document.querySelector('dialog[open]')) return;
     var k = ev.key;
-    // ` abre (foca) o terminal do rodapé. No teclado ABNT2 a crase é tecla morta (Shift + ´).
-    if (k === '`' || (k === 'Dead' && ev.code === 'BracketLeft' && ev.shiftKey)) {
-      if (entrada) { ev.stopImmediatePropagation(); ev.preventDefault(); buf = ''; entrada.focus(); }
-      return;
-    }
     if (k === ' ') { if (buf) { ev.stopImmediatePropagation(); ev.preventDefault(); } return; }
     if (k.length !== 1) return;
     var nb = buf + k;
@@ -2180,38 +2280,8 @@ var Logica = (function () {
     if (toques.length >= 5) { toques = []; abrir(); }
   });
 
-  // Terminal do rodapé: só compara texto com 2 comandos fixos. Nada é executado (sem eval).
-  var entrada = document.getElementById('termEntrada'), saida = document.getElementById('termSaida');
-  function responder(cmd, linhas) {
-    saida.textContent = '';
-    var eco = document.createElement('span'); eco.className = 'prompt'; eco.textContent = 'kernel$';
-    saida.appendChild(eco);
-    saida.appendChild(document.createTextNode(' ' + cmd + '\n' + linhas.join('\n')));
-    saida.hidden = false;
-  }
-  if (entrada) {
-    // A crase da tecla morta pode cair no campo junto com a próxima letra: ela não faz parte de comando nenhum.
-    entrada.addEventListener('input', function () { if (entrada.value.indexOf('`') >= 0) entrada.value = entrada.value.replace(/`/g, ''); });
-    entrada.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && entrada.value) { ev.preventDefault(); entrada.value = ''; } });
-    document.getElementById('terminal').addEventListener('submit', function (ev) {
-      ev.preventDefault();
-      var cmd = entrada.value.trim();
-      entrada.value = '';
-      if (!cmd) return;
-      var curto = cmd.length > 40 ? cmd.slice(0, 40) + '…' : cmd;
-      if (cmd.replace(/\s+/g, '') === ALVO) {
-        responder(curto, ['fork: retry: Resource temporarily unavailable']);
-        abrir();
-      } else if (cmd.toLowerCase() === 'help') {
-        responder(curto, ['comandos:',
-          '  help            mostra esta lista',
-          '  :(){ :|:& };:   fork bomb (de mentira)',
-          'nada aqui roda de verdade.']);
-      } else {
-        responder(curto, [curto + ': comando não encontrado (digite help)']);
-      }
-    });
-  }
+  var aoFechar = null;                  // chamado pelo terminal kernel$ quando o "sistema reinicia"
+  window.ForkBomb = Object.freeze({ abrir: function (depois) { if (aberto) return; aoFechar = depois || null; abrir(); } });
 
   function depois(ms, f) { timers.push(setTimeout(f, ms)); }
   function cartao(i) {
@@ -2225,9 +2295,9 @@ var Logica = (function () {
   function abrir() {
     if (aberto) return;
     focoAntes = document.activeElement;
-    var bt = document.getElementById('btAuto');
-    autoEstava = !!bt && bt.getAttribute('aria-pressed') === 'true';
-    if (autoEstava) bt.click();          // pausa o Auto (sem mexer na simulação)
+    var UI = window.SimuladorUI;
+    autoEstava = !!UI && UI.autoLigado();
+    if (autoEstava) UI.alternarAuto();   // pausa o Auto (a mesma função do botão)
     var reduz = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     var d = document.createElement('dialog');
     d.className = 'fb'; d.setAttribute('aria-label', 'Easter egg: fork bomb');
@@ -2272,8 +2342,453 @@ var Logica = (function () {
     if (d.open && typeof d.close === 'function') d.close();
     d.remove();                                        // DOM volta exatamente ao que era
     if (focoAntes && document.contains(focoAntes) && focoAntes.focus) focoAntes.focus();
-    if (autoEstava) { var bt = document.getElementById('btAuto'); if (bt && bt.getAttribute('aria-pressed') !== 'true') bt.click(); }
+    var UI = window.SimuladorUI;
+    if (autoEstava && UI && !UI.autoLigado()) UI.alternarAuto();
+    var f = aoFechar; aoFechar = null;
+    if (f) f();
   }
+})();
+</script>
+<script id="terminal">
+/* =====================================================================
+   TERMINAL kernel$ — modelado no terminal do portfólio do autor: overlay
+   aberto pela crase, boas-vindas, help em colunas, histórico com ↑/↓,
+   "comando não encontrado" com palpite, e um "jogo" (aqui, o fork bomb).
+   Acréscimos: Tab completa, Ctrl+L limpa, Ctrl+C cancela a linha.
+   Regras:
+   - nada é executado: o texto só é procurado numa tabela de comandos
+     (sem eval, sem new Function) e toda saída entra como texto puro;
+   - os comandos que mexem na simulação usam window.SimuladorUI, que chama
+     as MESMAS funções dos botões, inclusive a confirmação antes de perder
+     uma simulação em andamento. O terminal nunca toca em Logica;
+   - sem rede, sem armazenamento: o histórico vive só nesta aba.
+   ===================================================================== */
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+  var UI = window.SimuladorUI, dlg = $('dlgTerminal'), log = $('termLog'), cmd = $('termCmd'),
+      status = $('termStatus'), rodape = $('termEntrada');
+  if (!UI || !dlg) return;
+  var FORMAS = ['●', '■', '▲', '◆', '⬢', '⬟'];
+  var ALVO = ':(){:|:&};:';
+  var historico = [], posHist = -1, focoAntes = null, MAX_LINHAS = 300;
+
+  /* ---------- saída: sempre texto ---------- */
+  function L(tipo, texto) { return [tipo, String(texto)]; }
+  function out(t) { return L('out', t); }
+  function bom(t) { return L('good', t); }
+  function erro(t) { return L('err', t); }
+  function vazio() { return L('out', ''); }
+  function pad(s, n) { s = String(s); while (s.length < n) s += ' '; return s; }
+  function escrever(tipo, texto) {
+    var p = document.createElement('p');
+    p.setAttribute('data-tipo', tipo);
+    if (tipo === 'in') {
+      var s = document.createElement('span'); s.className = 'prompt'; s.textContent = 'kernel$';
+      p.appendChild(s); p.appendChild(document.createTextNode(' ' + texto));
+    } else p.textContent = texto;
+    log.appendChild(p);
+    while (log.childNodes.length > MAX_LINHAS) log.removeChild(log.firstChild);
+  }
+  function anunciar(linhas) {          // só a última resposta, sem enxurrada
+    var t = linhas.map(function (l) { return l[1]; }).filter(Boolean).join(' ');
+    status.textContent = '';
+    setTimeout(function () { status.textContent = t; }, 40);
+  }
+  function mostrar(linhas) {
+    linhas.forEach(function (l) { escrever(l[0], l[1]); });
+    log.scrollTop = log.scrollHeight;
+    anunciar(linhas);
+  }
+  var INTRO = [bom('kernel$ — terminal do simulador'),
+               out('Os comandos usam os mesmos botões da página. Nada roda de verdade.'),
+               out('Digite `help` para ver os comandos.')];
+  function limpar() { log.textContent = ''; INTRO.forEach(function (l) { escrever(l[0], l[1]); }); }
+
+  /* ---------- auxiliares ---------- */
+  function norm(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s_-]+/g, ''); }
+  function normEsp(s) { return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, ' ').trim(); }
+  function curto(s) { return s.length > 40 ? s.slice(0, 40) + '…' : s; }
+  function nomeNivel() { var n = UI.nivel(); return 'nível ' + n.numero + ' · ' + n.titulo; }
+  function narracao(passoAntes) {
+    var n = UI.narracao(), p = UI.passo(), r = [];
+    r.push(out(p !== passoAntes ? 'passo ' + p + ': ' + n.frase : n.frase));
+    if (n.alerta) r.push(erro(n.alerta));
+    return r;
+  }
+  function avisoConfirmar(passo) { return out('Confirme na janela que abriu: a simulação atual (passo ' + passo + ') será perdida.'); }
+  var NIVEL_DE = { '1': 'contador', contador: 'contador', '2': 'pipe', pipe: 'pipe', '3': 'filosofos', filosofos: 'filosofos' };
+  function numeroDe(id) { return UI.niveis().filter(function (n) { return n.id === id; })[0]; }
+
+  function parametro(nivelId, nome, valor, rotulo) {
+    var nv = numeroDe(nivelId);
+    if (UI.nivel().id !== nivelId) return [erro(rotulo.cmd + ' só existe no nível ' + nv.numero + ' (' + nv.titulo + '). Digite `nivel ' + nv.numero + '`.')];
+    if (UI.desafio()) return [erro('Parâmetros fixos durante o desafio ' + UI.desafio() + '.')];
+    if (UI.params()[nome] === valor) return [out('Já está assim: ' + rotulo.texto + '.')];
+    var passo = UI.passo(), r = UI.aplicarParams((function () { var o = {}; o[nome] = valor; return o; })());
+    if (r === 'confirmar') return [avisoConfirmar(passo)];
+    return [bom(rotulo.texto + '.'), out('Simulação reiniciada: ' + UI.resumoParams() + '.')];
+  }
+
+  var TOPICOS = { spinlock: 'contador', acquire: 'contador', release: 'contador', amoswap: 'contador', pushoff: 'contador',
+    futex: 'contador', semaforo: 'contador', pipe: 'pipe', sleep: 'pipe', wakeup: 'pipe', lostwakeup: 'pipe', buffer: 'pipe',
+    lockdep: 'filosofos', ordem: 'filosofos', grafo: 'filosofos', deadlock: 'filosofos' };
+  var LISTA_TOPICOS = 'spinlock, futex, semaforo, pipe, sleep, wakeup, lockdep, ordem, grafo';
+
+  /* ---------- comandos ---------- */
+  var CMDS = [
+    { n: 'ps', cat: 'SIMULAÇÃO', uso: 'ps', resumo: 'processos do nível e o estado de cada um',
+      man: ['Lista os processos do nível atual, com a mesma cor/forma e o mesmo estado dos cartões.', 'Na página: os cartões de processo no palco.'],
+      f: function () {
+        var r = [bom(nomeNivel() + ' · passo ' + UI.passo()), out('  ' + pad('NOME', 5) + pad('ESTADO', 27) + 'PODE RODAR')];
+        UI.processos().forEach(function (p) { r.push(out(FORMAS[p.forma] + ' ' + pad(p.nome, 5) + pad(p.estado, 27) + (p.pode ? 'sim' : 'não'))); });
+        r.push(out(UI.autoLigado() ? 'Auto ligado. `pause` pausa.' : '`step <nome>` roda um deles; `step` sozinho sorteia.'));
+        return r;
+      } },
+    { n: 'nivel', cat: 'SIMULAÇÃO', uso: 'nivel [1|2|3]', resumo: 'mostra ou troca o nível', args: function () { return ['1', '2', '3']; },
+      man: ['uso: nivel            mostra o nível atual', '     nivel 1|2|3      troca de nível (também: contador, pipe, filosofos)',
+            'Com uma simulação em andamento, pede confirmação antes, como as abas.', 'Na página: as abas de nível no topo.'],
+      f: function (a) {
+        if (!a) {
+          var r = [bom(nomeNivel())];
+          UI.niveis().forEach(function (n) { r.push(out('  ' + n.numero + '  ' + n.titulo + (n.id === UI.nivel().id ? '   ◀ atual' : ''))); });
+          r.push(out('`nivel <número>` troca.'));
+          return r;
+        }
+        var id = NIVEL_DE[norm(a)];
+        if (!id) return [erro('uso: nivel 1|2|3')];
+        var passo = UI.passo(), res = UI.trocarNivel(id);
+        if (res === 'mesmo') return [out('Já está no ' + nomeNivel() + '.')];
+        if (res === 'confirmar') return [avisoConfirmar(passo)];
+        return [bom(nomeNivel())].concat(narracao(-1));
+      } },
+    { n: 'step', cat: 'SIMULAÇÃO', uso: 'step [processo]', resumo: 'passo aleatório, ou roda um processo',
+      args: function () { return UI.processos().map(function (p) { return p.nome; }); },
+      man: ['uso: step             o escalonador sorteia quem roda', '     step <nome>      roda esse processo (ex.: step P0, step C1, step F2)',
+            'Na página: “Passo aleatório” (Espaço) e “Executar” (teclas 1 a 6).'],
+      f: function (a) {
+        var antes = UI.passo();
+        if (!a) { UI.passoAleatorio(); return narracao(antes); }
+        var ps = UI.processos(), i = -1;
+        ps.forEach(function (p, k) { if (norm(p.nome) === norm(a)) i = k; });
+        if (i < 0) return [erro('Não há processo "' + curto(a) + '" neste nível. Veja `ps`.')];
+        if (!ps[i].pode) return [erro(ps[i].nome + ' não pode rodar agora: ' + ps[i].estado + '.')];
+        UI.executar(i);
+        return narracao(antes);
+      } },
+    { n: 'back', cat: 'SIMULAÇÃO', uso: 'back', resumo: 'volta 1 passo',
+      man: ['Desfaz o último passo, sem limite.', 'Na página: “Voltar 1 passo” (tecla Z).'],
+      f: function () {
+        var antes = UI.passo(); UI.voltar();
+        return UI.passo() === antes ? [out('Já está no passo 0.')] : [out('Voltou para o passo ' + UI.passo() + '.')];
+      } },
+    { n: 'auto', cat: 'SIMULAÇÃO', uso: 'auto', resumo: 'liga o Auto (o escalonador sorteia)',
+      man: ['Liga o Auto: um passo aleatório a cada 1,2 s na velocidade 1×. Os passos aparecem na página.', 'Na página: “Auto” (tecla A).'],
+      f: function () {
+        if (UI.autoLigado()) return [out('O Auto já está ligado. `pause` pausa.')];
+        UI.alternarAuto();
+        if (!UI.autoLigado()) return [out(UI.narracao().frase)];
+        return [bom('Auto ligado (' + String(UI.velocidade()).replace('.', ',') + '×).'), out('Os passos aparecem na página. `pause` pausa.')];
+      } },
+    { n: 'pause', cat: 'SIMULAÇÃO', uso: 'pause', resumo: 'pausa o Auto',
+      man: ['Pausa o Auto. Os 2 passos anteriores ficam à vista na narração.', 'Na página: “Pausar” (tecla A).'],
+      f: function () {
+        if (!UI.autoLigado()) return [out('O Auto já está pausado.')];
+        UI.alternarAuto();
+        return [bom('Auto pausado no passo ' + UI.passo() + '.')];
+      } },
+    { n: 'reset', cat: 'SIMULAÇÃO', uso: 'reset', resumo: 'reinicia a simulação',
+      man: ['Volta ao passo 0 com os mesmos parâmetros. Não pede confirmação, porque a página oferece “Desfazer reinício”.', 'Na página: “Reiniciar” (tecla R).'],
+      f: function () {
+        if (!UI.emAndamento()) return [out('A simulação já está no passo 0.')];
+        UI.reiniciar();
+        return [bom('Simulação reiniciada.'), out('Na página, “Desfazer reinício” traz de volta o que havia.')];
+      } },
+    { n: 'lock', cat: 'PARÂMETROS', uso: 'lock on|off', resumo: 'nível 1: spinlock em volta do contador++', args: function () { return ['on', 'off']; },
+      man: ['uso: lock on|off', 'Nível 1. Liga ou desliga o spinlock (acquire/release) em volta do contador++ e reinicia.',
+            'Com uma simulação em andamento, pede confirmação antes.', 'Na página: “Ajustar” → “Proteger com lock” → “Aplicar e reiniciar”.'],
+      f: function (a) {
+        var v = { on: true, ligado: true, ligar: true, off: false, desligado: false, desligar: false }[norm(a)];
+        if (!a && UI.nivel().id === 'contador') return [out('lock ' + (UI.params().lock ? 'on' : 'off') + '. uso: lock on|off')];
+        if (v === undefined && UI.nivel().id === 'contador') return [erro('uso: lock on|off')];
+        return parametro('contador', 'lock', v, { cmd: 'lock', texto: v ? 'lock ligado' : 'lock desligado' });
+      } },
+    { n: 'versao', cat: 'PARÂMETROS', uso: 'versao <v>', resumo: 'nível 2: correta, semchecagem ou ingenua',
+      args: function () { return ['correta', 'semchecagem', 'ingenua']; },
+      man: ['uso: versao correta|semchecagem|ingenua', 'Nível 2. Troca a versão do pipe e reinicia:',
+            '  correta       como o xv6: testa cheio/vazio segurando o lock', '  semchecagem   não testa cheio/vazio: sobrescreve e lê vazio',
+            '  ingenua       teste e sleep separados, sem lock: lost wakeup', 'Na página: “Ajustar” → “Versão”.'],
+      f: function (a) {
+        var mapa = { correta: 'correta', semchecagem: 'semChecagem', ingenua: 'ingenua' }, v = mapa[norm(a)];
+        var nomes = { correta: 'versão correta (como o xv6)', semChecagem: 'versão sem checagem', ingenua: 'versão ingênua (lost wakeup)' };
+        if (UI.nivel().id === 'pipe' && !v) return [a ? erro('uso: versao correta|semchecagem|ingenua') : out(nomes[UI.params().versao] + '. uso: versao correta|semchecagem|ingenua')];
+        return parametro('pipe', 'versao', v, { cmd: 'versao', texto: nomes[v] });
+      } },
+    { n: 'estrategia', cat: 'PARÂMETROS', uso: 'estrategia <e>', resumo: 'nível 3: esquerdo, ordem ou canhoto',
+      args: function () { return ['esquerdo', 'ordem', 'canhoto']; },
+      man: ['uso: estrategia esquerdo|ordem|canhoto', 'Nível 3. Como os filósofos pegam os garfos:',
+            '  esquerdo   todos o esquerdo primeiro (pode dar deadlock)', '  ordem      ordem global: o garfo de menor número primeiro',
+            '  canhoto    F0 pega o direito primeiro', 'Na página: “Ajustar” → “Estratégia”.'],
+      f: function (a) {
+        var v = { esquerdo: 'esquerdo', ordem: 'ordem', canhoto: 'canhoto' }[norm(a)];
+        var nomes = { esquerdo: 'estratégia: todos pegam o esquerdo primeiro', ordem: 'estratégia: ordem global', canhoto: 'estratégia: um canhoto (F0)' };
+        if (UI.nivel().id === 'filosofos' && !v) return [a ? erro('uso: estrategia esquerdo|ordem|canhoto') : out(nomes[UI.params().estrategia] + '. uso: estrategia esquerdo|ordem|canhoto')];
+        return parametro('filosofos', 'estrategia', v, { cmd: 'estrategia', texto: nomes[v] });
+      } },
+    { n: 'desafios', cat: 'ESTUDO', uso: 'desafios', resumo: 'abre a lista de desafios',
+      man: ['Fecha o terminal e abre a lista de desafios (provoque o bug, depois tente com a correção).', 'Na página: botão “Desafios” (tecla D).'],
+      f: function () {
+        var e = UI.estrelas();
+        return { linhas: [bom('Abrindo a lista de desafios…'), out('Estrelas: ' + e.feitas + ' de ' + e.maximo + '.')],
+                 depois: function () { fechar(); UI.abrirDesafios(); } };
+      } },
+    { n: 'glossario', cat: 'ESTUDO', uso: 'glossario [termo]', resumo: 'os 15 termos, ou a definição de um',
+      man: ['uso: glossario            lista os termos', '     glossario <termo>    mostra a definição (ex.: glossario deadlock)', 'Na página: botão “Glossário” (tecla G).'],
+      f: function (a) {
+        var g = UI.glossario();
+        if (!a) {
+          var r = [bom('GLOSSÁRIO (' + g.length + ' termos)')];
+          g.forEach(function (t) { r.push(out('  ' + t[0])); });
+          r.push(vazio(), out('`glossario <termo>` mostra a definição.'));
+          return r;
+        }
+        var q = normEsp(a);
+        var com = g.filter(function (t) { return normEsp(t[0]).indexOf(q) === 0; });
+        if (!com.length) com = g.filter(function (t) { return normEsp(t[0]).indexOf(q) >= 0; });
+        if (!com.length) return [erro('Termo não encontrado: ' + curto(a) + '. `glossario` lista todos.')];
+        if (com.length > 1) return [out('Mais de um termo:')].concat(com.map(function (t) { return out('  ' + t[0]); }));
+        return [bom(com[0][0]), out(com[0][1])];
+      } },
+    { n: 'xv6', cat: 'ESTUDO', uso: 'xv6 [tópico]', resumo: 'abre “Como o xv6 e o Linux fazem”',
+      args: function () { return LISTA_TOPICOS.split(', '); },
+      man: ['uso: xv6               abre o painel do nível atual', '     xv6 <tópico>      confere em que nível o tópico está e abre o painel',
+            'Tópicos: ' + LISTA_TOPICOS + '.', 'Na página: “Como o xv6 e o Linux fazem”, no fim.'],
+      f: function (a) {
+        if (a) {
+          var nv = TOPICOS[norm(a)];
+          if (!nv) return [erro('Tópico desconhecido: ' + curto(a) + '.'), out('Tópicos: ' + LISTA_TOPICOS + '.')];
+          if (nv !== UI.nivel().id) { var n = numeroDe(nv); return [erro('“' + curto(a) + '” fica no painel do nível ' + n.numero + ' (' + n.titulo + ').'), out('Digite `nivel ' + n.numero + '` e depois `xv6 ' + a + '`.')]; }
+        }
+        return { linhas: [bom('Abrindo “Como o xv6 e o Linux fazem” (' + nomeNivel() + ')…')],
+                 depois: function () { fechar(); UI.abrirPainelSO(); } };
+      } },
+    { n: 'coffman', cat: 'ESTUDO', uso: 'coffman', resumo: 'as 4 condições de deadlock, agora',
+      man: ['No nível 3, mostra quais das 4 condições de Coffman valem agora, como no palco.', 'Nos outros níveis, só explica as condições.'],
+      f: function () {
+        var c = UI.coffman(), nomes = [['exclusaoMutua', 'exclusão mútua: um garfo só tem um dono'], ['posseEEspera', 'posse e espera: segura um e espera outro'],
+          ['naoPreempcao', 'não preempção: ninguém tira o garfo de ninguém'], ['esperaCircular', 'espera circular: um ciclo no grafo']];
+        var r = [bom('CONDIÇÕES DE COFFMAN (as quatro juntas = deadlock)')];
+        if (!c) {
+          nomes.forEach(function (x) { r.push(out('  ' + x[1])); });
+          r.push(out('Elas aparecem no nível 3: digite `nivel 3` e depois `coffman`.'));
+          return r;
+        }
+        var todas = true;
+        nomes.forEach(function (x) { r.push(out((c[x[0]] ? '● presente  ' : '○ ausente   ') + x[1])); if (!c[x[0]]) todas = false; });
+        r.push(todas ? erro('As quatro valem: deadlock' + (c.ciclo ? ' (ciclo ' + c.ciclo.join(' → ') + ' → ' + c.ciclo[0] + ').' : '.'))
+                     : bom('Falta pelo menos uma: não há deadlock agora.'));
+        return r;
+      } },
+    { n: 'man', cat: 'ESTUDO', uso: 'man <comando>', resumo: 'ajuda detalhada de um comando',
+      args: function () { return CMDS.map(function (c) { return c.n; }); },
+      man: ['uso: man <comando>', 'Mostra o uso de um comando e o botão da página que ele usa.'],
+      f: function (a) {
+        if (!a) return [erro('uso: man <comando>   (ex.: man step)')];
+        var c = achar(a.split(/\s+/)[0]);
+        if (!c || !c.man) return [erro('Sem manual para ' + curto(a) + '. `help` lista os comandos.')];
+        return [bom('MAN ' + c.n.toUpperCase() + ' — ' + c.resumo)].concat(c.man.map(out));
+      } },
+    { n: 'forkbomb', cat: 'JOGO', uso: 'forkbomb', resumo: ':(){ :|:& };: lota a tabela de processos',
+      man: ['uso: forkbomb   ou   :(){ :|:& };:', 'O “jogo” do terminal: os processos se copiam até lotar a tabela (64, o NPROC do xv6).',
+            'É só visual: nenhum processo de verdade é criado. Esc, um clique ou “Reiniciar o sistema” fecham.'],
+      f: function () {
+        return { linhas: [out('fork: retry: Resource temporarily unavailable')],
+                 depois: function () {
+                   if (!window.ForkBomb) return;
+                   window.ForkBomb.abrir(function () {
+                     if (!dlg.open) return;
+                     mostrar([bom('Sistema reiniciado: a tabela de processos lotou (64 de 64).'), out('Digite `forkbomb` para tentar de novo.')]);
+                     cmd.focus();
+                   });
+                 } };
+      } },
+    { n: 'help', cat: 'SISTEMA', uso: 'help', resumo: 'esta lista (também: ajuda, ?)',
+      man: ['Lista os comandos por categoria.'], f: function () { return help(); } },
+    { n: 'neofetch', cat: 'SISTEMA', uso: 'neofetch', resumo: 'dados do simulador',
+      man: ['Mostra dados do simulador (nunca do seu computador).'],
+      f: function () {
+        var ps = UI.processos(), e = UI.estrelas();
+        function k(c, v) { var r = c + ' '; while (r.length < 13) r += '.'; return out(r + ' ' + v); }
+        return [bom(' ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱'), bom(' ┃ ● ■ ▲ ◆ ⬢ ⬟ ┃'), bom(' ╱╱╱╱╱╱╱╱╱╱╱╱╱╱╱'), vazio(),
+          bom('escalonador@fabrica'), out('-------------------'),
+          k('SO', 'Simulador de sincronização (1 arquivo HTML)'),
+          k('Kernel', 'xv6-riscv, como modelo didático'),
+          k('Nível', UI.nivel().numero + ' · ' + UI.nivel().titulo),
+          k('Cenário', UI.resumoParams()),
+          k('Passo', UI.passo()),
+          k('Processos', ps.length + ' (' + ps.map(function (p) { return p.nome; }).join(', ') + ')'),
+          k('Escalonador', 'você · Auto ' + (UI.autoLigado() ? 'ligado' : 'pausado') + ' · ' + String(UI.velocidade()).replace('.', ',') + '×'),
+          k('Desafio', UI.desafio() || 'nenhum'),
+          k('Estrelas', e.feitas + ' de ' + e.maximo),
+          k('Tabela', '64 processos (o NPROC do xv6)'),
+          k('Testes', '18 (node --test)'),
+          k('Rede', 'nenhuma requisição')];
+      } },
+    { n: 'history', cat: 'SISTEMA', uso: 'history', resumo: 'comandos desta sessão',
+      man: ['Lista os comandos digitados nesta aba. ↑ e ↓ navegam por eles.'],
+      f: function () {
+        return historico.slice().reverse().map(function (h, i) { return out(pad(String(i + 1), 4) + h); });
+      } },
+    { n: 'clear', cat: 'SISTEMA', uso: 'clear', resumo: 'limpa a tela (Ctrl+L)',
+      man: ['Limpa a tela e mostra a mensagem de boas-vindas. Atalho: Ctrl+L.'],
+      f: function () { return { limpar: true }; } },
+    { n: 'exit', cat: 'SISTEMA', uso: 'exit', resumo: 'fecha o terminal (Esc ou `)',
+      man: ['Fecha o terminal. Também fecham: Esc, a crase (`) e o botão ×.'],
+      f: function () { return { linhas: [], depois: fechar }; } },
+    { n: 'sudo', cat: 'PIADAS', uso: 'sudo <comando>', resumo: 'pede permissão',
+      man: ['Experimente.'],
+      f: function (a) {
+        if (!a) return [erro('uso: sudo <comando>')];
+        if (/^rm\b/.test(norm(a)) || /^rm(\s|$)/.test(a.trim().toLowerCase())) return rm();
+        return [erro('visitante não está no arquivo sudoers.'), out('Aqui quem manda é o escalonador. E o escalonador é você.')];
+      } },
+    { n: 'rm', cat: 'PIADAS', uso: 'rm -rf /', resumo: 'tenta apagar tudo', man: ['Experimente.'], f: function () { return rm(); } },
+    { n: 'whoami', cat: 'PIADAS', uso: 'whoami', resumo: 'quem é você aqui', man: ['Experimente.'],
+      f: function () { return [out('escalonador'), out('Você decide quem roda a cada passo.')]; } },
+    // fora do help (para quem adivinhar)
+    { n: 'snake', oculto: true, f: function () { return [out('Aqui o jogo é outro: digite `forkbomb`.')]; } },
+    { n: 'ls', oculto: true, f: function () { return [out('contador/   pipe/   filosofos/'), out('Use `nivel 1|2|3` para entrar num deles.')]; } }
+  ];
+  function rm() { return [erro('Boa tentativa.'), out('Isto é um arquivo HTML estático: não há disco para apagar. Nada foi apagado.')]; }
+  var APELIDOS = { ajuda: 'help', '?': 'help', limpar: 'clear', sair: 'exit', q: 'exit', close: 'exit', quit: 'exit', jogo: 'forkbomb',
+    voltar: 'back', passo: 'step', glossary: 'glossario' };
+  var PALPITES = { top: 'ps', jobs: 'ps', htop: 'ps', run: 'step', next: 'step', play: 'auto', start: 'auto', stop: 'pause',
+    restart: 'reset', reboot: 'reset', kill: 'reset', undo: 'back', cd: 'nivel', level: 'nivel', cat: 'man', info: 'man',
+    logout: 'exit', fork: 'forkbomb', challenge: 'desafios' };
+  function achar(nome) {
+    var n = norm(nome); n = APELIDOS[n] || n;
+    return CMDS.filter(function (c) { return c.n === n; })[0] || null;
+  }
+
+  function help() {
+    var r = [], cat = '';
+    CMDS.forEach(function (c) {
+      if (c.oculto) return;
+      if (c.cat !== cat) { cat = c.cat; r.push(bom(cat)); }
+      r.push(out('  ' + pad(c.uso, 19) + c.resumo));
+    });
+    r.push(vazio(), out('↑/↓ histórico · Tab completa · Ctrl+C cancela a linha'),
+           bom('Tem coisa que não está nessa lista. Tente adivinhar.'));
+    return r;
+  }
+
+  /* ---------- rodar uma linha ---------- */
+  function rodar(bruto) {
+    var linha = bruto.trim();
+    if (!linha) return;
+    historico.unshift(linha); posHist = -1;
+    escrever('in', curto(linha));
+    var res;
+    if (linha.replace(/\s+/g, '') === ALVO) res = achar('forkbomb').f('');
+    else {
+      var partes = linha.split(/\s+/), c = achar(partes[0]), arg = partes.slice(1).join(' ');
+      if (c) res = c.f(arg);
+      else {
+        var palpite = PALPITES[norm(partes[0])];
+        res = [erro('comando não encontrado: ' + curto(partes[0])), out(palpite ? 'Você quis dizer `' + palpite + '`?' : 'Digite `help`.')];
+      }
+    }
+    if (Array.isArray(res)) res = { linhas: res };
+    if (res.limpar) { limpar(); anunciar([out('Tela limpa.')]); return; }
+    mostrar(res.linhas || []);
+    if (res.depois) res.depois();
+  }
+
+  /* ---------- abrir e fechar (como no portfólio: overlay pela crase) ---------- */
+  function abrirTerminal() {
+    if (!dlg.open) {
+      focoAntes = document.activeElement;
+      if (!log.childNodes.length) limpar();
+      if (typeof dlg.showModal === 'function') dlg.showModal(); else dlg.setAttribute('open', '');
+    }
+    cmd.focus();
+    log.scrollTop = log.scrollHeight;
+  }
+  function fechar() {
+    if (!dlg.open) return;
+    if (typeof dlg.close === 'function') dlg.close(); else dlg.removeAttribute('open');
+    cmd.value = ''; posHist = -1;
+    if (focoAntes && document.contains(focoAntes) && focoAntes.focus) focoAntes.focus();
+    focoAntes = null;
+  }
+  function eCrase(ev) { return ev.key === '`' || (ev.key === 'Dead' && ev.code === 'BracketLeft' && ev.shiftKey); }
+
+  // Crase: abre de qualquer lugar (fora de campos e de outras janelas); dentro do terminal, fecha.
+  window.addEventListener('keydown', function (ev) {
+    if (ev.ctrlKey || ev.metaKey || ev.altKey || !eCrase(ev)) return;
+    var t = ev.target, tag = t && t.tagName;
+    if (dlg.open) {
+      if (dlg.contains(t)) { ev.preventDefault(); ev.stopImmediatePropagation(); fechar(); }
+      return;
+    }
+    if ((tag === 'INPUT' && t !== rodape) || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    if (document.querySelector('dialog[open]')) return;
+    ev.preventDefault(); ev.stopImmediatePropagation();
+    if (t === rodape) rodape.value = '';
+    abrirTerminal();
+  }, true);
+
+  // Nada digitado no terminal chega aos atalhos da página (1, 2, A, Espaço…).
+  dlg.addEventListener('keydown', function (ev) { ev.stopPropagation(); });
+  dlg.addEventListener('cancel', function (ev) { ev.preventDefault(); fechar(); });   // Esc
+  $('termFechar').addEventListener('click', fechar);
+  $('termForm').addEventListener('submit', function (ev) { ev.preventDefault(); var v = cmd.value; cmd.value = ''; rodar(v); });
+
+  // A crase da tecla morta pode cair no campo junto com a próxima letra: não faz parte de comando nenhum.
+  [cmd, rodape].forEach(function (c) {
+    if (c) c.addEventListener('input', function () { if (c.value.indexOf('`') >= 0) c.value = c.value.replace(/`/g, ''); });
+  });
+
+  function completar() {
+    var v = cmd.value, partes = v.replace(/^\s+/, '').split(/\s+/), prefixo, opcoes, base = '';
+    if (partes.length === 1) { prefixo = partes[0]; opcoes = CMDS.filter(function (c) { return !c.oculto; }).map(function (c) { return c.n; }); }
+    else if (partes.length === 2) {
+      var c = achar(partes[0]);
+      if (!c || !c.args) return;
+      prefixo = partes[1]; opcoes = c.args(); base = c.n + ' ';
+    } else return;
+    var m = opcoes.filter(function (o) { return norm(o).indexOf(norm(prefixo)) === 0; });
+    if (!m.length) return;
+    if (m.length === 1) { cmd.value = base + m[0] + (partes.length === 1 ? ' ' : ''); return; }
+    var comum = m[0];
+    m.forEach(function (o) { while (o.toLowerCase().indexOf(comum.toLowerCase()) !== 0) comum = comum.slice(0, -1); });
+    if (comum.length > prefixo.length) cmd.value = base + comum;
+    mostrar([out(m.join('   '))]);
+  }
+
+  cmd.addEventListener('keydown', function (ev) {
+    var k = ev.key;
+    if (k === 'ArrowUp' || k === 'ArrowDown') {           // histórico, como no portfólio (mais novo primeiro)
+      ev.preventDefault();
+      if (k === 'ArrowUp' && posHist < historico.length - 1) { posHist++; cmd.value = historico[posHist]; }
+      else if (k === 'ArrowDown') { if (posHist > 0) { posHist--; cmd.value = historico[posHist]; } else { posHist = -1; cmd.value = ''; } }
+      return;
+    }
+    if (k === 'Tab' && !ev.shiftKey && cmd.value.trim()) { ev.preventDefault(); completar(); return; }   // vazio: Tab segue o foco
+    if (ev.ctrlKey && !ev.altKey && !ev.metaKey && (k === 'l' || k === 'L')) { ev.preventDefault(); limpar(); anunciar([out('Tela limpa.')]); return; }
+    if (ev.ctrlKey && !ev.altKey && !ev.metaKey && (k === 'c' || k === 'C') && cmd.selectionStart === cmd.selectionEnd) {
+      ev.preventDefault(); escrever('in', curto(cmd.value) + '^C'); cmd.value = ''; posHist = -1; log.scrollTop = log.scrollHeight;
+    }
+  });
+
+  // Prompt do rodapé: o que for digitado ali roda no terminal, que se abre.
+  $('terminal').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var v = rodape.value; rodape.value = '';
+    abrirTerminal();
+    if (v.trim()) rodar(v);
+  });
+  rodape.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && rodape.value) { ev.preventDefault(); rodape.value = ''; } });
 })();
 </script>
 
