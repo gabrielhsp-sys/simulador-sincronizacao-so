@@ -1,0 +1,1993 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulador: Sincronização, Comunicação e Deadlock</title>
+<meta name="description" content="Simulador passo a passo de condição de corrida e spinlock, produtor-consumidor no pipe do xv6 e jantar dos filósofos com grafo de alocação.">
+<style>
+/* ============================================================
+   IDENTIDADE VISUAL — "Fábrica de Processos" (fusão aprovada pelo grupo)
+   Base neo-brutalista: fundo amarelo pontilhado, contornos pretos grossos,
+   sombras duras, cores chapadas e UMA FORMA por processo (● ■ ▲ ◆ ⬢ ⬟),
+   para a identificação nunca depender só da cor.
+   + "kernel$ alerta" (prompt, cursor ▌ e tremor curto) no erro e no deadlock.
+   + brilho na cor do processo por um instante ao clicar em "Executar".
+   Só fontes do sistema: nada é baixado da rede.
+   Toda animação fica dentro de prefers-reduced-motion: no-preference.
+   ============================================================ */
+:root {
+  color-scheme: light;
+  --amarelo: #FFD23F; --papel: #FFFDF5; --tinta: #111111; --suave: #3B3B3B; --apagado: #5A5A5A;
+  --erro: #E0261B; --ok: #0B7A55; --ok-fundo: #C9F2DF; --cobalto: #2B50F0;
+  --kernel-fundo: #000000; --kernel-prompt: #FFB847; --kernel-texto: #FFD99A;
+  /* processos: cor chapada, cor do texto sobre ela (AA) e tom suave do cartão */
+  --p0: #FF5A36; --p0-on: #111111; --p0-suave: #FFE1D8;
+  --p1: #2B50F0; --p1-on: #FFFFFF; --p1-suave: #DCE3FF;
+  --p2: #19C39A; --p2-on: #111111; --p2-suave: #D3F5EB;
+  --p3: #B48CFF; --p3-on: #111111; --p3-suave: #EDE3FF;
+  --p4: #FF8FB8; --p4-on: #111111; --p4-suave: #FFE3EE;
+  --p5: #7ED957; --p5-on: #111111; --p5-suave: #E2F7D8;
+  --pesado: "Arial Black", "Archivo Black", Impact, "Helvetica Neue", Arial, sans-serif;
+  --din: Bahnschrift, "DIN Alternate", "Roboto Condensed", "Segoe UI", Arial, sans-serif;
+  --mono: Consolas, "Cascadia Mono", "SF Mono", Menlo, "DejaVu Sans Mono", monospace;
+  --sombra: 6px 6px 0 var(--tinta);
+  font-size: 100%;
+}
+html.apresentacao { font-size: 116%; }
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  margin: 0; background: var(--amarelo); color: var(--tinta); font-family: var(--din); font-size: 1.0625rem; line-height: 1.4;
+  background-image: radial-gradient(rgba(17,17,17,.13) 1.2px, transparent 1.4px); background-size: 18px 18px;
+}
+h1, h2, h3 { margin: 0; line-height: 1.15; }
+button, select, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+code, pre, kbd { font-family: var(--mono); }
+kbd { display: inline-block; min-width: 1.5em; padding: 0 .3em; background: #fff; color: var(--tinta); border: 2px solid var(--tinta); font-size: .78em; text-align: center; line-height: 1.3; font-weight: 700; }
+:focus-visible { outline: 4px solid var(--cobalto); outline-offset: 3px; }
+.so-leitor { position: absolute; left: 0; top: 0; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+.pular { position: absolute; left: -999px; top: 0; z-index: 20; background: var(--tinta); color: var(--amarelo); padding: .5rem 1rem; font-weight: 800; }
+.pular:focus { left: 1rem; }
+.ic { width: 1.1em; height: 1.1em; flex: none; vertical-align: -0.15em; }
+
+/* ---------- botões ---------- */
+.bt { background: #fff; color: var(--tinta); border: 3px solid var(--tinta); box-shadow: 4px 4px 0 var(--tinta); padding: .4rem .85rem; font-weight: 800; min-height: 2.5rem; display: inline-flex; align-items: center; gap: .4rem; }
+.bt:hover:not(:disabled) { background: var(--amarelo); }
+.bt:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: none; }
+.bt-primario { background: var(--tinta); color: var(--amarelo); }
+.bt-primario:hover:not(:disabled) { background: #333; }
+.bt:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+.bt-link { border: 0; background: none; text-decoration: underline; padding: .2rem; font-weight: 800; }
+
+/* ---------- barra superior (uma só) ---------- */
+.topo { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem 1.25rem; padding: .65rem 1.25rem; background: var(--tinta); color: #fff; border-bottom: 4px solid var(--tinta); }
+.marca { display: grid; margin-right: auto; }
+.marca-1 { font: 900 1.3rem/1 var(--pesado); color: var(--amarelo); }
+.marca-2 { font-size: .82rem; color: #fff; font-weight: 600; }
+.niveis { display: flex; flex-wrap: wrap; gap: .35rem; }
+.niveis button { background: none; border: 2px solid transparent; color: #fff; padding: .35rem .7rem; font-weight: 800; display: inline-flex; align-items: center; gap: .45rem; white-space: nowrap; }
+.niveis .num { display: inline-grid; place-items: center; width: 1.5rem; height: 1.5rem; background: #fff; color: var(--tinta); font-weight: 900; }
+.niveis button[aria-selected="true"] { background: var(--amarelo); color: var(--tinta); border-color: var(--amarelo); }
+.niveis button[aria-selected="true"] .num { background: var(--tinta); color: var(--amarelo); }
+.niveis button:hover:not([aria-selected="true"]) { border-color: #fff; }
+.util { display: flex; flex-wrap: wrap; gap: .35rem; }
+.util button { background: none; border: 2px solid #fff; color: #fff; padding: .3rem .65rem; font-weight: 800; }
+.util button:hover, .util button[aria-pressed="true"] { background: #fff; color: var(--tinta); }
+.util .estrelas { color: var(--amarelo); }
+.util button:hover .estrelas, .util button[aria-pressed="true"] .estrelas { color: var(--tinta); }
+
+/* ---------- faixa do desafio ---------- */
+.faixa-desafio { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem 1rem; padding: .7rem 1.25rem; background: #fff; border-bottom: 4px solid var(--tinta);
+  box-shadow: inset 0 -10px 0 -6px var(--amarelo); }
+.faixa-desafio p { margin: 0; }
+.faixa-desafio .titulo { font: 900 1.05rem var(--pesado); margin-right: auto; }
+.faixa-desafio .dica { flex-basis: 100%; background: var(--amarelo); border: 3px solid var(--tinta); padding: .4rem .7rem; font-weight: 700; }
+
+/* ---------- grade principal ---------- */
+main { overflow-x: clip; }   /* o tremor e o carimbo animam sem criar rolagem lateral */
+.grade { max-width: 1440px; margin: 0 auto; padding: 1.1rem 1.25rem 2rem; display: grid; gap: 1.1rem; }
+.grade > * { min-width: 0; }
+
+/* ---------- palco: a visualização é o centro ---------- */
+.palco { position: relative; background: #fff; border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: 1.9rem 1.25rem 1.4rem; }
+.palco::before { content: ""; position: absolute; left: 0; right: 0; top: 0; height: 12px; border-bottom: 4px solid var(--tinta);
+  background: repeating-linear-gradient(-45deg, var(--tinta) 0 12px, var(--amarelo) 12px 24px); }
+.palco:focus { outline: none; }
+.palco-cab { display: flex; flex-wrap: wrap; gap: .6rem 1rem; align-items: flex-start; }
+.palco-cab h2 { font: 900 2rem/1.05 var(--pesado); }
+.papel { margin: .3rem 0 0; color: var(--suave); font-weight: 600; max-width: 70ch; }
+.param { margin-left: auto; background: #fff; border: 3px solid var(--tinta); box-shadow: 4px 4px 0 var(--tinta); padding: .35rem .35rem .35rem .75rem; font-weight: 700; display: inline-flex; gap: .6rem; align-items: center; text-align: left; }
+.param b { background: var(--tinta); color: var(--amarelo); padding: .25rem .6rem; }
+.param:active { transform: translate(4px, 4px); box-shadow: none; }
+.coach { display: flex; gap: .75rem; align-items: center; margin-top: .9rem; background: var(--amarelo); border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: .7rem 1rem; font-weight: 700; }
+.coach p { margin: 0; }
+.cena { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 32rem) minmax(0, 1fr); gap: 1.6rem; align-items: center; margin-top: 1.1rem; }
+.cena.lista { grid-template-columns: minmax(0, 1fr) minmax(320px, 440px); align-items: start; }
+.lado { display: grid; gap: .9rem; min-width: 0; }
+.lado.esq { justify-items: end; } .lado.dir { justify-items: start; }
+.centro { display: grid; justify-items: center; gap: .85rem; min-width: 0; }
+
+/* ---------- cartão de processo ---------- */
+.token { width: min(100%, 340px); background: var(--cs); border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: .8rem .9rem; display: grid; gap: .6rem; min-width: 0; position: relative; }
+.token > * { min-width: 0; }
+.token.parado { background: #F1ECDD; }
+.token-cab { display: flex; flex-wrap: wrap; gap: .5rem; align-items: center; }
+.pid { display: inline-flex; align-items: center; gap: .45rem; font: 900 1.25rem var(--pesado); white-space: nowrap; }
+.pid::before { content: ""; width: 1.55rem; height: 1.55rem; background: var(--c); border: 3px solid var(--tinta); flex: none; }
+.pid[data-forma="0"]::before { border-radius: 50%; }
+.pid[data-forma="2"]::before { clip-path: polygon(50% 0, 100% 100%, 0 100%); border: 0; filter: drop-shadow(2px 2px 0 var(--tinta)); }
+.pid[data-forma="3"]::before { transform: rotate(45deg) scale(.8); }
+.pid[data-forma="4"]::before { clip-path: polygon(25% 3%, 75% 3%, 100% 50%, 75% 97%, 25% 97%, 0 50%); border: 0; filter: drop-shadow(2px 2px 0 var(--tinta)); }
+.pid[data-forma="5"]::before { clip-path: polygon(50% 0, 100% 38%, 82% 100%, 18% 100%, 0 38%); border: 0; filter: drop-shadow(2px 2px 0 var(--tinta)); }
+.pid.mini { font-size: .85rem; gap: .3rem; } .pid.mini::before { width: 1rem; height: 1rem; border-width: 2px; }
+.estado { display: inline-flex; align-items: center; gap: .35rem; font-weight: 800; background: #fff; border: 2px solid var(--tinta); padding: .05rem .5rem; font-size: .95rem; }
+.estado.e-girando { background: var(--amarelo); }
+.estado.e-dormindo, .estado.e-esperando { background: var(--tinta); color: #fff; }
+.estado.e-fim { background: var(--ok-fundo); }
+.dados { display: flex; flex-wrap: wrap; gap: .3rem 1.2rem; margin: 0; }
+.dados div { display: grid; }
+.dados dt { font-size: .8rem; font-weight: 700; color: var(--suave); }
+.dados dd { margin: 0; font: 900 1.75rem/1.1 var(--pesado); }
+.prox { background: #fff; border: 3px solid var(--tinta); padding: .3rem .6rem; overflow: hidden; }
+.prox small { display: block; font-size: .75rem; font-weight: 700; color: var(--suave); }
+.prox code { display: block; font-size: .95rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.exec { width: 100%; display: flex; align-items: center; gap: .6rem; background: var(--c); color: var(--co); border: 4px solid var(--tinta); box-shadow: 5px 5px 0 var(--tinta);
+  padding: .65rem .8rem; font: 900 1.15rem var(--pesado); text-align: left; }
+.exec kbd { margin-left: auto; }
+.exec:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 7px 7px 0 var(--tinta); }
+.exec:active:not(:disabled) { transform: translate(5px, 5px); box-shadow: none; }
+.exec:disabled { background: #E6E1D3; color: #4A4A4A; box-shadow: none; cursor: not-allowed; }
+/* versão compacta (filósofos): uma linha por processo, cabe acima da dobra */
+.token.compacto { width: 100%; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .15rem .6rem; padding: .4rem .55rem; box-shadow: 4px 4px 0 var(--tinta); }
+.token.compacto .token-cab { gap: .3rem .45rem; flex-wrap: nowrap; min-width: 0; }
+.token.compacto .pid { font-size: 1.05rem; } .token.compacto .pid::before { width: 1.2rem; height: 1.2rem; }
+.token.compacto .estado { font-size: .8rem; white-space: nowrap; }
+.token.compacto .exec kbd { display: none; }
+.token.compacto .exec { grid-column: 2; grid-row: 1; width: auto; font-size: .9rem; padding: .35rem .55rem; box-shadow: 3px 3px 0 var(--tinta); }
+.lista-procs { gap: .45rem; }
+.lista-procs { display: grid; }
+.lista-procs h3 { font: 900 1rem var(--pesado); }
+
+/* ---------- centro: estado compartilhado ---------- */
+.var { display: grid; justify-items: center; background: var(--tinta); color: var(--amarelo); padding: .5rem 2.6rem 1rem; border: 4px solid var(--tinta); box-shadow: 8px 8px 0 var(--p0); }
+.var-nome { font-weight: 800; color: #fff; }
+.valor { font: 900 8.5rem/1 var(--pesado); font-variant-numeric: tabular-nums; }
+.chips { display: flex; flex-wrap: wrap; gap: .5rem; justify-content: center; }
+.chip { display: inline-flex; align-items: center; gap: .35rem; background: #fff; border: 3px solid var(--tinta); padding: .15rem .6rem; font-weight: 800; }
+.chip.ruim { background: var(--erro); color: #fff; }
+.chip.bom { background: var(--ok-fundo); }
+.chip.cond { flex-direction: column; gap: 0; box-shadow: 3px 3px 0 var(--tinta); }
+.chip code { font-size: .75rem; color: var(--apagado); font-weight: 400; }
+.chip.lock.preso { position: relative; padding-left: 2.6rem; color: var(--tinta);
+  background: linear-gradient(#fff, #fff) 2.1rem 0 / 100% 100% no-repeat, repeating-linear-gradient(-45deg, var(--tinta) 0 6px, var(--amarelo) 6px 12px); }
+.chip.lock.preso .ic { position: absolute; left: .35rem; background: var(--amarelo); }
+.anel { width: 480px; max-width: 100%; height: auto; }
+.setor { fill: none; stroke-width: 62; }
+.setor.ocup { stroke: var(--tinta); } .setor.vaz { stroke: #EFE9D7; }
+.slot-val { font: 900 22px var(--pesado); } .slot-val.ocup { fill: var(--amarelo); } .slot-val.vaz { fill: var(--tinta); }
+.slot-idx { font: 700 11px var(--mono); } .slot-idx.ocup { fill: #fff; } .slot-idx.vaz { fill: var(--tinta); }
+.anel-centro { fill: var(--tinta); font: 800 14px var(--din); }
+.ptr rect { stroke: var(--tinta); stroke-width: 3; } .ptr text { font: 900 12px var(--din); fill: var(--tinta); }
+.ptr.r rect { fill: var(--p2); } .ptr.w rect { fill: var(--p0); }
+.ocupacao { display: grid; justify-items: center; gap: .3rem; }
+.ocupacao strong { font-family: var(--pesado); }
+.medidor { display: flex; gap: 4px; } .medidor i { display: block; width: 40px; height: 12px; background: #fff; border: 2px solid var(--tinta); } .medidor i.on { background: var(--tinta); }
+.lidos { display: flex; flex-wrap: wrap; gap: .35rem; align-items: center; justify-content: center; }
+.item { background: var(--amarelo); border: 2px solid var(--tinta); padding: 0 .35rem; font: 700 .95rem var(--mono); }
+.duas-figuras { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: .8rem 1.2rem; width: 100%; }
+.duas-figuras figure { margin: 0; }
+.duas-figuras figcaption { font: 900 1rem var(--pesado); }
+.duas-figuras svg { width: 100%; max-width: 330px; height: auto; display: block; margin: 0 auto; }
+.legenda { margin: .2rem 0 0; font-size: .85rem; color: var(--suave); font-weight: 600; }
+.coffman { display: flex; flex-wrap: wrap; gap: .4rem; justify-content: center; list-style: none; margin: 0; padding: 0; }
+.coffman li { display: inline-flex; gap: .35rem; align-items: center; border: 3px solid var(--tinta); padding: .1rem .55rem; font-weight: 800; background: #fff; }
+.coffman li.sim { background: var(--tinta); color: var(--amarelo); }
+.coffman li.nao { background: #fff; color: var(--apagado); border-style: dashed; }
+.coffman h3 { width: 100%; text-align: center; font: 900 .95rem var(--pesado); }
+
+/* ---------- narração: o que acabou de acontecer + controles ---------- */
+.narra { overflow: hidden; display: flex; flex-wrap: wrap; gap: .8rem 1.1rem; align-items: flex-start; background: var(--tinta); color: #fff; border: 4px solid var(--tinta); box-shadow: 6px 6px 0 var(--cobalto); padding: .9rem 1.1rem; }
+.grade.alerta .narra { box-shadow: 6px 6px 0 var(--erro); }
+.passo-n { background: var(--amarelo); color: var(--tinta); font: 900 1.1rem var(--pesado); padding: .2rem .6rem; white-space: nowrap; }
+.narra-texto { flex: 1 1 380px; min-width: 0; }
+.frase { margin: 0; font-size: 1.3rem; font-weight: 700; }
+.alerta-kernel { margin: 0 0 .5rem; padding: .35rem .6rem; background: var(--kernel-fundo); border: 3px solid var(--erro); color: var(--kernel-texto); font: 700 1.05rem/1.4 var(--mono); }
+.alerta-kernel .prompt { color: var(--kernel-prompt); }
+.eventos { list-style: none; margin: .5rem 0 0; padding: 0; display: grid; gap: .35rem; justify-items: start; }
+.eventos li { display: inline-flex; gap: .4rem; align-items: center; background: var(--erro); color: #fff; font-weight: 800; padding: .25rem .6rem; transform: rotate(-1deg); border: 2px solid #fff; }
+.eventos li.giro { background: var(--amarelo); color: var(--tinta); transform: none; border-color: var(--amarelo); }
+.resumo-final { margin: .55rem 0 0; display: inline-flex; gap: .4rem; align-items: center; font-weight: 800; padding: .25rem .6rem; border: 3px solid #fff; }
+.resumo-final.ok { background: var(--ok-fundo); color: var(--tinta); }
+.resumo-final.erro { background: #fff; color: var(--erro); }
+.desfazer { margin: .5rem 0 0; } .desfazer .bt-link { color: var(--amarelo); }
+.ctl { display: flex; flex-wrap: wrap; gap: .45rem; align-items: center; }
+.ctl .bt { box-shadow: none; border-color: #fff; }
+.ctl label { display: inline-flex; gap: .35rem; align-items: center; font-weight: 800; }
+.ctl select { background: #fff; color: var(--tinta); border: 3px solid #fff; min-height: 2.5rem; padding: .2rem; font-weight: 800; }
+
+/* ---------- linha do tempo e código ---------- */
+.baixo { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 1.1rem; align-items: start; }
+.caixa { background: #fff; border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: .8rem .9rem; min-width: 0; }
+.caixa > h2 { font: 900 1.1rem var(--pesado); margin-bottom: .3rem; }
+.caixa > p { margin: 0 0 .5rem; color: var(--suave); font-size: .9rem; font-weight: 600; }
+.lt-rolagem { overflow-x: auto; position: relative; }
+.lt { border-collapse: separate; border-spacing: 4px; font-size: .78rem; }
+.lt thead th { color: var(--suave); font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; }
+.lt th[scope=row] { position: sticky; left: 0; z-index: 1; background: #fff; text-align: left; padding-right: .3rem; }
+.lt td { min-width: 3em; width: 3em; height: 2.1em; text-align: center; background: #F3EEE0; border: 2px solid #E2DBC6; font-weight: 800; color: var(--co); }
+.lt td.r { background: var(--c); border-color: var(--tinta); }
+.lt td.gira { background: repeating-linear-gradient(-45deg, var(--c) 0 6px, #fff 6px 12px); color: var(--tinta); border-color: var(--tinta); }
+.lt td.gira span { background: #fff; padding: 0 .15rem; }
+.lt td.ruim { outline: 3px solid var(--erro); outline-offset: 1px; }
+.lt td.fut { background: none; border: 2px dashed var(--tinta); color: var(--tinta); }
+.lt-vazio { margin: .4rem 0 0; font-weight: 700; }
+.codigo { display: grid; gap: .6rem; }
+.cod-proc { border: 3px solid var(--tinta); background: #FBF8EE; }
+.cod-cab { background: var(--cs); border-bottom: 3px solid var(--tinta); padding: .15rem .5rem; }
+.cod-proc ol { list-style: none; margin: 0; padding: .3rem .5rem; overflow-x: auto; position: relative; }
+.cod-proc li { display: grid; grid-template-columns: 1.2em auto minmax(0, 1fr); gap: .5rem; white-space: nowrap; font: .86rem/1.6 var(--mono); }
+.cod-proc li.atual { background: var(--amarelo); font-weight: 700; }
+.com { color: var(--apagado); overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- extras (recolhidos) ---------- */
+.extras { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 1.1rem; align-items: start; }
+.extras details { background: #fff; border: 4px solid var(--tinta); box-shadow: var(--sombra); padding: .7rem .9rem; }
+.extras summary { cursor: pointer; } .extras summary h2 { display: inline; font: 900 1.05rem var(--pesado); }
+.painel-so pre { background: #FBF8EE; border: 3px solid var(--tinta); padding: .6rem; overflow-x: auto; font-size: .8rem; }
+.painel-so h3 { font: 900 .95rem var(--pesado); margin: .9rem 0 .3rem; }
+.painel-so p { margin: .4rem 0; }
+.historico ol { margin: .5rem 0 0; padding: 0; list-style: none; max-height: 18rem; overflow-y: auto; display: grid; gap: .2rem; }
+.historico li { display: grid; grid-template-columns: 2.2rem 1fr; gap: .4rem; font-size: .9rem; padding: .1rem .2rem; }
+.historico li .n { text-align: right; color: var(--suave); font-variant-numeric: tabular-nums; }
+.historico li.atual { background: var(--amarelo); font-weight: 700; }
+.historico li.ruim { color: var(--erro); font-weight: 700; }
+.historico li.vazio { display: block; color: var(--suave); }
+
+/* ---------- diálogos ---------- */
+dialog { border: 4px solid var(--tinta); box-shadow: 10px 10px 0 var(--tinta); padding: 0; max-width: min(46rem, calc(100vw - 2rem)); width: 100%; background: var(--papel); color: var(--tinta); }
+dialog::backdrop { background: rgba(17, 17, 17, .6); }
+.dlg { padding: 1.2rem 1.4rem; max-height: calc(100vh - 4rem); overflow-y: auto; }
+.dlg h2 { font: 900 1.6rem/1.1 var(--pesado); margin-bottom: .7rem; }
+.dlg h3 { font: 900 1.05rem var(--pesado); margin: 1rem 0 .45rem; }
+.dlg p, .dlg li { max-width: 68ch; }
+.dlg-acoes { display: flex; flex-wrap: wrap; gap: .6rem; justify-content: flex-end; margin-top: 1rem; }
+.passos-tut { font-weight: 800; color: var(--suave); }
+.glossario dt { font: 900 1rem var(--pesado); margin-top: .7rem; } .glossario dd { margin: .15rem 0 0; }
+.lista-desafios { list-style: none; padding: 0; margin: 0; display: grid; gap: .5rem; }
+.lista-desafios li { display: grid; grid-template-columns: 2.6rem minmax(0, 1fr) 4.6rem 8.2rem; gap: .6rem; align-items: center; background: #fff; border: 3px solid var(--tinta); padding: .45rem .6rem; }
+.lista-desafios .id { font: 900 1.05rem var(--pesado); }
+.lista-desafios .bt { justify-content: center; box-shadow: 3px 3px 0 var(--tinta); }
+.estrelas-txt { font-size: 1.15rem; letter-spacing: .08em; white-space: nowrap; }
+.criterios { list-style: none; padding: 0; display: grid; gap: .3rem; }
+.criterios .feito { font-weight: 800; } .criterios .nao-feito { color: var(--apagado); }
+.atalhos { display: grid; grid-template-columns: auto 1fr; gap: .35rem .8rem; }
+.gaveta { margin-right: 0; margin-top: 0; height: 100vh; max-height: 100vh; max-width: min(26rem, 100vw); }
+.gaveta .dlg { max-height: 100vh; }
+.form-params { display: grid; gap: .7rem; }
+.form-params label { display: grid; gap: .2rem; font-weight: 800; }
+.form-params select { background: #fff; border: 3px solid var(--tinta); min-height: 2.6rem; padding: .3rem; font-weight: 700; }
+.form-params .check { display: flex; align-items: center; gap: .5rem; } .form-params .check input { width: 1.3rem; height: 1.3rem; }
+.form-params .ajuda-campo { font-weight: 600; font-size: .88rem; color: var(--suave); }
+.form-params .aviso { margin: 0; background: var(--amarelo); border: 3px solid var(--tinta); padding: .45rem .6rem; font-weight: 700; font-size: .92rem; }
+
+/* ---------- modo apresentação: só o essencial, maior ---------- */
+html.apresentacao .marca-2, html.apresentacao .historico, html.apresentacao .codigo-box,
+html.apresentacao .util button:not(#btApresentacao) { display: none; }
+html.apresentacao .baixo, html.apresentacao .extras { grid-template-columns: minmax(0, 1fr); }
+html.apresentacao .grade { max-width: none; padding-top: .8rem; }
+html.apresentacao .frase { font-size: 1.45rem; }
+
+/* ---------- telas menores ---------- */
+@media (max-width: 1100px) { .baixo, .extras { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 900px) {
+  .cena, .cena.lista { grid-template-columns: minmax(0, 1fr); }
+  .lado.esq, .lado.dir { justify-items: center; }
+  .param { margin-left: 0; }
+  .palco-cab h2 { font-size: 1.6rem; }
+}
+@media (max-width: 520px) {
+  .topo, .grade { padding-left: .75rem; padding-right: .75rem; }
+  .palco { padding: 1.7rem .8rem 1rem; }
+  .valor { font-size: 5.5rem; }
+  .var { padding: .4rem 1.6rem .7rem; }
+  .lista-desafios li { grid-template-columns: 2.2rem minmax(0, 1fr); }
+  .lista-desafios .estrelas-txt, .lista-desafios .bt { grid-column: 2; justify-self: start; }
+  .frase { font-size: 1.1rem; }
+}
+
+/* ---------- movimento (desligado com prefers-reduced-motion) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .token.rodou { animation: acende .75s ease-out; }
+  @keyframes acende {
+    0% { box-shadow: 6px 6px 0 var(--tinta), 0 0 0 0 var(--c); }
+    22% { box-shadow: 6px 6px 0 var(--tinta), 0 0 0 6px var(--c), 0 0 46px 12px var(--c); }
+    100% { box-shadow: 6px 6px 0 var(--tinta), 0 0 0 0 transparent, 0 0 0 0 transparent; } }
+  .valor.mudou { animation: troca .45s cubic-bezier(.2,.9,.3,1); }
+  @keyframes troca { from { transform: translateY(-40%); opacity: 0; } }
+  .lt td.novo { animation: cai .35s cubic-bezier(.2,.9,.3,1); }
+  @keyframes cai { from { transform: translateY(-14px); opacity: 0; } }
+  .chip.lock.fechou { animation: bate .45s cubic-bezier(.2,.9,.3,1); }
+  @keyframes bate { from { transform: translateY(-18px) rotate(-6deg); } }
+  .token .e-girando .ic { animation: engrenagem 1.1s linear infinite; }
+  @keyframes engrenagem { to { transform: rotate(360deg); } }
+  .setor.novo { animation: pinta .6s ease-out; }
+  @keyframes pinta { from { stroke: var(--p0); } }
+  .grade.tremor { animation: tremor .42s steps(6); }
+  @keyframes tremor { 0%, 100% { transform: none; } 20% { transform: translate(-6px, 2px); } 40% { transform: translate(5px, -3px); } 60% { transform: translate(-3px, 1px); } 80% { transform: translate(2px, 0); } }
+  .grade.tremor .eventos li:not(.giro) { animation: carimbo .5s cubic-bezier(.2,.9,.3,1); }
+  @keyframes carimbo { from { transform: scale(1.6) rotate(-8deg); opacity: 0; } }
+  .alerta-kernel .cursor { animation: pisca 1s steps(1) infinite; }
+  @keyframes pisca { 50% { opacity: 0; } }
+}
+.coffman-tit { width: 100%; text-align: center; font: 900 .95rem var(--pesado); margin-top: .3rem; }
+</style>
+</head>
+<body>
+<a class="pular" href="#palco">Pular para a simulação</a>
+
+<!-- Barra única: nome, níveis e ferramentas -->
+<header class="topo">
+  <h1 class="marca"><span class="marca-1">Simulador</span><span class="marca-2">Sincronização, Comunicação e Deadlock</span></h1>
+  <div class="niveis" role="tablist" aria-label="Níveis">
+    <button role="tab" id="aba-contador" data-nivel="contador" aria-controls="painelNivel" aria-selected="true"><span class="num">1</span>Contador</button>
+    <button role="tab" id="aba-pipe" data-nivel="pipe" aria-controls="painelNivel" aria-selected="false"><span class="num">2</span>Pipe</button>
+    <button role="tab" id="aba-filosofos" data-nivel="filosofos" aria-controls="painelNivel" aria-selected="false"><span class="num">3</span>Filósofos</button>
+  </div>
+  <div class="util">
+    <button id="btDesafios" type="button">Desafios <span class="estrelas" id="totalEstrelas"></span></button>
+    <button id="btGlossario" type="button">Glossário</button>
+    <button id="btAjuda" type="button">Ajuda</button>
+    <button id="btApresentacao" type="button" aria-pressed="false">Apresentar</button>
+  </div>
+</header>
+
+<div class="faixa-desafio" id="faixaDesafio" hidden>
+  <p class="titulo" id="dTitulo"></p>
+  <p id="dMeta"></p>
+  <button class="bt" id="btDica" type="button">Ver dica</button>
+  <button class="bt" id="btSairDesafio" type="button">Sair do desafio</button>
+  <p class="dica" id="dDica" hidden></p>
+</div>
+
+<main>
+<div class="grade" id="painelNivel" role="tabpanel" aria-labelledby="aba-contador">
+
+  <!-- Palco: o estado compartilhado no centro, os processos com o botão Executar em volta -->
+  <section class="palco" id="palco" tabindex="-1" aria-labelledby="cenaTitulo">
+    <div class="palco-cab">
+      <div><h2 id="cenaTitulo"></h2><p class="papel" id="cenaSub"></p></div>
+      <button class="param" id="btParams" type="button" aria-haspopup="dialog"><span id="resumoParams"></span><b>Ajustar</b></button>
+    </div>
+    <div id="coachArea"></div>
+    <div class="cena" id="cena"></div>
+  </section>
+
+  <!-- O que acabou de acontecer + controles secundários -->
+  <section class="narra" aria-labelledby="narraTitulo">
+    <h2 id="narraTitulo" class="so-leitor">O que acabou de acontecer</h2>
+    <span class="passo-n" id="contaPassos">Passo 0</span>
+    <div class="narra-texto">
+      <p class="alerta-kernel" id="alertaKernel" hidden><span class="prompt">kernel$</span> <span id="alertaTxt"></span><span class="cursor" aria-hidden="true">▌</span></p>
+      <p class="frase" id="fraseAtual" aria-live="polite"></p>
+      <ul class="eventos" id="eventos"></ul>
+      <div id="resumoFinal"></div>
+      <div id="areaDesfazer"></div>
+    </div>
+    <div class="ctl">
+      <button class="bt" id="btVoltar" type="button" title="Desfaz o último passo (tecla Z)">Voltar 1 passo</button>
+      <button class="bt" id="btProximo" type="button" title="O escalonador escolhe um processo ao acaso (tecla Espaço)">Passo aleatório</button>
+      <button class="bt" id="btAuto" type="button" aria-pressed="false" title="Roda sozinho (tecla A)">Auto</button>
+      <label>Velocidade
+        <select id="velocidade">
+          <option value="0.5">0,5×</option><option value="1" selected>1×</option>
+          <option value="2">2×</option><option value="4">4×</option>
+        </select>
+      </label>
+      <button class="bt" id="btReiniciar" type="button" title="Volta ao início com os mesmos parâmetros (tecla R)">Reiniciar</button>
+    </div>
+  </section>
+
+  <div class="baixo">
+    <section class="caixa raias" aria-labelledby="ltTitulo">
+      <h2 id="ltTitulo">Linha do tempo: quem rodou em cada passo</h2>
+      <p>Cada coluna é um passo; a ordem é a intercalação que você escolheu. Listrado: passo gasto girando. Contorno vermelho: erro.</p>
+      <div class="lt-rolagem" id="ltRolagem"><table class="lt" id="linhaTempo"></table></div>
+      <p class="lt-vazio" id="ltVazio" hidden>A linha do tempo enche a cada passo: cada bloco mostra quem rodou e o que fez.</p>
+    </section>
+    <section class="caixa codigo-box" aria-labelledby="codTitulo">
+      <h2 id="codTitulo">Código de cada processo</h2>
+      <p>▶ marca a próxima linha de cada processo.</p>
+      <div class="codigo" id="codigo"></div>
+    </section>
+  </div>
+
+  <div class="extras">
+    <details class="painel-so" id="painelSOBox">
+      <summary><h2>Como o xv6 e o Linux fazem</h2></summary>
+      <div id="painelSO"></div>
+    </details>
+    <details class="historico">
+      <summary><h2>Histórico de passos</h2></summary>
+      <ol id="log"></ol>
+    </details>
+  </div>
+</div>
+</main>
+
+<!-- ======================= DIÁLOGOS ======================= -->
+<dialog id="dlgParams" class="gaveta" aria-labelledby="paramsTitulo">
+  <div class="dlg">
+    <h2 id="paramsTitulo">Parâmetros</h2>
+    <form class="form-params" id="formParams"></form>
+    <div class="dlg-acoes"><button class="bt" type="button" data-fechar>Fechar</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlgTutorial" aria-labelledby="tutTitulo">
+  <div class="dlg">
+    <p class="passos-tut" id="tutPasso"></p>
+    <h2 id="tutTitulo"></h2>
+    <div id="tutTexto"></div>
+    <div class="dlg-acoes">
+      <button class="bt" type="button" id="tutPular">Pular tutorial</button>
+      <button class="bt" type="button" id="tutAnterior">Anterior</button>
+      <button class="bt bt-primario" type="button" id="tutProximo">Próximo</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgGlossario" aria-labelledby="gloTitulo">
+  <div class="dlg">
+    <h2 id="gloTitulo">Glossário</h2>
+    <dl class="glossario" id="gloLista"></dl>
+    <div class="dlg-acoes"><button class="bt bt-primario" type="button" data-fechar>Fechar</button></div>
+  </div>
+</dialog>
+
+<dialog id="dlgAjuda" aria-labelledby="ajudaTitulo">
+  <div class="dlg">
+    <h2 id="ajudaTitulo">Ajuda</h2>
+    <p>Cada nível mostra processos que dividem algo: uma variável, um buffer ou garfos. Você faz o papel do <strong>escalonador</strong>: a cada passo escolhe quem roda, clicando em “Executar” no cartão do processo. “Passo aleatório” e “Auto” deixam o escalonador escolher ao acaso.</p>
+    <p>Cada processo tem uma cor e uma forma (● ■ ▲ ◆ ⬢ ⬟), as mesmas no cartão, na linha do tempo, no código e nos desenhos.</p>
+    <p>Os <strong>desafios</strong> são opcionais: pedem que você provoque um bug e depois tente de novo com a correção.</p>
+    <h3>Atalhos de teclado</h3>
+    <div class="atalhos">
+      <kbd>1</kbd><span>a <kbd>6</kbd>: executa o processo dessa posição</span>
+      <kbd>Espaço</kbd><span>Passo aleatório (o escalonador escolhe)</span>
+      <kbd>A</kbd><span>Auto / Pausar</span>
+      <kbd>Z</kbd><span>Voltar 1 passo</span>
+      <kbd>R</kbd><span>Reiniciar</span>
+      <kbd>+</kbd><span>e <kbd>−</kbd>: velocidade do Auto</span>
+      <kbd>D</kbd><span>Desafios</span>
+      <kbd>G</kbd><span>Glossário</span>
+      <kbd>P</kbd><span>Modo apresentação</span>
+      <kbd>?</kbd><span>Esta ajuda</span>
+      <kbd>Esc</kbd><span>Fecha a janela aberta</span>
+    </div>
+    <div class="dlg-acoes">
+      <button class="bt" type="button" id="btRever">Rever o tutorial</button>
+      <button class="bt bt-primario" type="button" data-fechar>Fechar</button>
+    </div>
+  </div>
+</dialog>
+
+<dialog id="dlgDesafios" aria-labelledby="desTitulo">
+  <div class="dlg">
+    <h2 id="desTitulo">Desafios</h2>
+    <p>Opcionais e curtos. Cada um vale até 3 estrelas:</p>
+    <ul>
+      <li>1 estrela por concluir;</li>
+      <li>1 estrela se concluir sem ver a dica;</li>
+      <li>1 estrela se concluir no menor número de passos possível.</li>
+    </ul>
+    <div id="desLista"></div>
+    <div class="dlg-acoes">
+      <button class="bt" type="button" id="btApagar">Apagar progresso</button>
+      <button class="bt bt-primario" type="button" data-fechar>Fechar</button>
+    </div>
+    <p id="apagarMsg" aria-live="polite"></p>
+  </div>
+</dialog>
+
+<dialog id="dlgResultado" aria-labelledby="resTitulo">
+  <div class="dlg">
+    <h2 id="resTitulo">Desafio concluído</h2>
+    <p class="estrelas-txt" id="resEstrelas"></p>
+    <ul class="criterios" id="resCriterios"></ul>
+    <h3>Por que isso aconteceu?</h3>
+    <p id="resPorque"></p>
+    <p id="resSalvo"></p>
+    <div class="dlg-acoes">
+      <button class="bt" type="button" id="resContinuar">Continuar explorando</button>
+      <button class="bt" type="button" id="resLista">Ver desafios</button>
+      <button class="bt bt-primario" type="button" id="resProximo">Próximo desafio</button>
+    </div>
+  </div>
+</dialog>
+
+<script id="logica">
+/* =====================================================================
+   LÓGICA DO SIMULADOR (pura: sem DOM, sem rede, sem relógio)
+   ---------------------------------------------------------------------
+   Cada nível é uma máquina de estados com a mesma interface:
+     criar(params)        -> estado inicial
+     executaveis(estado)  -> índices dos processos que podem dar um passo
+     passo(estado, pid)   -> { estado: novoEstado, frase, eventos }
+     situacao(estado)     -> { terminou, travado, ... }
+     programa(estado,pid) -> { linhas, atual }  (pseudocódigo + linha atual)
+   O "escalonador" é quem chama passo(): o usuário (passo a passo) ou o
+   modo Auto (escolha aleatória). passo() NUNCA altera o estado recebido:
+   devolve uma cópia. Isso permite o botão "Voltar 1 passo" (pilha de
+   estados) e a busca exaustiva de intercalações nos testes.
+   Este bloco é lido e executado pelos testes em tests/logica.test.js.
+   ===================================================================== */
+var Logica = (function () {
+  'use strict';
+
+  function copiar(o) { return JSON.parse(JSON.stringify(o)); }
+  function todosTerminaram(e) { return e.procs.every(function (p) { return p.estado === 'fim'; }); }
+
+  /* -------------------------------------------------------------------
+     NÍVEL 1 — CONTADOR COMPARTILHADO (condição de corrida × spinlock)
+     contador++ não é atômico: vira "ler para o registrador" e
+     "escrever registrador + 1". Se outro processo escreve entre esses
+     dois passos, um incremento é apagado (atualização perdida).
+     Com lock: acquire (troca atômica, como o amoswap do xv6) protege a
+     seção crítica; quem encontra o lock ocupado GIRA (spin) e gasta o
+     passo, como um spinlock real.
+     ------------------------------------------------------------------- */
+  var contador = {
+    id: 'contador',
+
+    criar: function (p) {
+      var procs = [];
+      for (var i = 0; i < p.processos; i++) {
+        procs.push({ id: i, nome: 'P' + i, pc: 0, reg: null, feitos: 0, estado: 'pronto' });
+      }
+      return {
+        nivel: 'contador', params: copiar(p),
+        contador: 0,      // a variável compartilhada
+        lock: null,       // null = livre; senão, índice do dono
+        procs: procs,
+        passos: 0, perdas: 0, giros: 0
+      };
+    },
+
+    // Spinlock: quem está girando continua executável (gastando CPU).
+    executaveis: function (e) {
+      return e.procs.filter(function (p) { return p.estado !== 'fim'; })
+                    .map(function (p) { return p.id; });
+    },
+
+    passo: function (e0, pid) {
+      var e = copiar(e0), p = e.procs[pid], frase, eventos = [];
+      e.passos++;
+      // Programa sem lock: 0 ler, 1 escrever.
+      // Programa com lock: 0 acquire, 1 ler, 2 escrever, 3 release.
+      var op = e.params.lock ? ['acquire', 'ler', 'escrever', 'release'][p.pc]
+                             : ['ler', 'escrever'][p.pc];
+
+      if (op === 'acquire') {
+        if (e.lock === null) {            // amoswap devolveu 0: lock era livre
+          e.lock = pid; p.estado = 'pronto'; p.pc = 1;
+          frase = p.nome + ' executa acquire: a troca atômica põe 1 no lock e devolve 0 (estava livre). ' +
+                  p.nome + ' entra na seção crítica.';
+        } else {                          // amoswap devolveu 1: ocupado, gira
+          p.estado = 'girando'; e.giros++;
+          frase = p.nome + ' executa acquire: a troca atômica devolve 1 (lock ocupado por ' +
+                  e.procs[e.lock].nome + '). ' + p.nome + ' gira (spin) e gasta este passo sem avançar.';
+          eventos.push({ tipo: 'giro', texto: p.nome + ' girou esperando o lock.' });
+        }
+      } else if (op === 'ler') {
+        p.reg = e.contador; p.pc++;
+        frase = p.nome + ' lê o contador (' + e.contador + ') e guarda no seu registrador: reg = ' + p.reg + '.';
+      } else if (op === 'escrever') {
+        var novo = p.reg + 1;
+        if (e.contador !== p.reg) {
+          // Alguém escreveu entre a leitura e esta escrita: esse trabalho some.
+          e.perdas++;
+          frase = p.nome + ' escreve reg + 1 = ' + novo + ', mas leu ' + p.reg + ' e o contador já valia ' +
+                  e.contador + ': o incremento de outro processo foi apagado (atualização perdida).';
+          eventos.push({ tipo: 'perda', texto: 'Atualização perdida: ' + p.nome + ' leu ' + p.reg + ' e escreveu ' +
+                         novo + ', mas o contador já valia ' + e.contador + ' com o trabalho de outro processo.' });
+        } else {
+          frase = p.nome + ' escreve reg + 1 = ' + novo + ' no contador.';
+        }
+        e.contador = novo;
+        if (e.params.lock) { p.pc = 3; } else { terminarIncremento(e, p); }
+      } else { // release
+        e.lock = null;
+        frase = p.nome + ' executa release: o lock volta a 0 e outro processo pode entrar.';
+        terminarIncremento(e, p);
+      }
+      if (p.estado === 'fim') frase += ' ' + p.nome + ' terminou seus incrementos.';
+      // marca: rótulo curto do passo, usado na linha do tempo de intercalação
+      var marca = p.estado === 'girando' ? 'gira'
+                : { acquire: 'acq', ler: 'lê', escrever: 'esc', release: 'rel' }[op];
+      return { estado: e, frase: frase, eventos: eventos, marca: marca };
+
+      function terminarIncremento(e, p) {
+        p.feitos++; p.pc = 0; p.reg = null;
+        if (p.feitos >= e.params.incrementos) p.estado = 'fim';
+      }
+    },
+
+    situacao: function (e) {
+      var esperado = e.params.processos * e.params.incrementos;
+      return { terminou: todosTerminaram(e), travado: false, esperado: esperado,
+               correto: todosTerminaram(e) && e.contador === esperado };
+    },
+
+    programa: function (e, pid) {
+      var p = e.procs[pid];
+      var linhas = e.params.lock
+        ? ['acquire(&lock);', 'reg = contador;', 'contador = reg + 1;', 'release(&lock);']
+        : ['reg = contador;', 'contador = reg + 1;'];
+      return { linhas: linhas, atual: p.estado === 'fim' ? -1 : p.pc };
+    }
+  };
+
+  /* -------------------------------------------------------------------
+     NÍVEL 2 — PRODUTOR-CONSUMIDOR NO BUFFER CIRCULAR (pipe do xv6)
+     Como em kernel/pipe.c: data[PIPESIZE], contadores nread/nwrite que
+     só crescem; a posição é índice % PIPESIZE.
+       cheio: nwrite == nread + PIPESIZE      vazio: nwrite == nread
+     Três versões:
+       'correta'     -> como o xv6: testa a condição SEGURANDO o lock e
+                        sleep(canal, lock) solta o lock e dorme de uma vez.
+       'semChecagem' -> com lock, mas sem testar cheio/vazio: sobrescreve
+                        item não lido ou lê posição vazia.
+       'ingenua'     -> sem lock; o teste e o sleep são passos separados:
+                        um wakeup entre eles se perde (lost wakeup).
+     Simplificação: cada write/read transfere UM item (no xv6, um write
+     pode copiar vários bytes dentro do mesmo acquire).
+     ------------------------------------------------------------------- */
+  var OPS_PIPE = {
+    correta: {
+      P: { ops: ['acquire', 'testaCheio', 'sleepW', 'escreve', 'wakeupRelease', 'close'],
+           linhas: ['acquire(&pi->lock);',
+                    'while (nwrite == nread + PIPESIZE)   // cheio?',
+                    '    sleep(&nwrite, &pi->lock);       // solta o lock e dorme',
+                    'data[nwrite++ % PIPESIZE] = item;',
+                    'wakeup(&nread); release(&pi->lock);',
+                    'close(): writeopen = 0; wakeup(&nread);'] },
+      C: { ops: ['acquire', 'testaVazio', 'sleepR', 'le', 'wakeupRelease', 'fimRelease'],
+           linhas: ['acquire(&pi->lock);',
+                    'while (nread == nwrite && writeopen) // vazio?',
+                    '    sleep(&nread, &pi->lock);        // solta o lock e dorme',
+                    'item = data[nread++ % PIPESIZE];',
+                    'wakeup(&nwrite); release(&pi->lock);',
+                    'release(&pi->lock); return 0;        // vazio e fechado'] }
+    },
+    semChecagem: {
+      P: { ops: ['acquire', 'escreve', 'release'],
+           linhas: ['acquire(&pi->lock);',
+                    'data[nwrite++ % PIPESIZE] = item;    // SEM testar cheio',
+                    'release(&pi->lock);'] },
+      C: { ops: ['acquire', 'le', 'release'],
+           linhas: ['acquire(&pi->lock);',
+                    'item = data[nread++ % PIPESIZE];     // SEM testar vazio',
+                    'release(&pi->lock);'] }
+    },
+    ingenua: {
+      P: { ops: ['testaCheio', 'sleepW', 'escreveWake', 'close'],
+           linhas: ['if (nwrite == nread + PIPESIZE)      // cheio? (sem lock)',
+                    '    sleep(&nwrite);                  // passo separado do teste!',
+                    'data[nwrite++ % PIPESIZE] = item; wakeup(&nread);',
+                    'close(): writeopen = 0; wakeup(&nread);'] },
+      C: { ops: ['testaVazio', 'sleepR', 'leWake'],
+           linhas: ['if (nread == nwrite)                 // vazio? (sem lock)',
+                    '    sleep(&nread);                   // passo separado do teste!',
+                    'item = data[nread++ % PIPESIZE]; wakeup(&nwrite);'] }
+    }
+  };
+
+  var pipe = {
+    id: 'pipe',
+
+    criar: function (p) {
+      var procs = [], total = p.produtores * p.itens, i;
+      for (i = 0; i < p.produtores; i++) {
+        procs.push({ id: i, tipo: 'P', nome: 'P' + (i + 1), letra: String.fromCharCode(65 + i),
+                     pc: 0, estado: 'pronto', canal: null, precisaLock: false, feitos: 0 });
+      }
+      for (i = 0; i < p.consumidores; i++) {
+        // alvo: quantos itens este consumidor lê (usado só na versão sem checagem,
+        // que não tem como saber que o pipe fechou)
+        var alvo = Math.floor(total / p.consumidores) + (i < total % p.consumidores ? 1 : 0);
+        procs.push({ id: p.produtores + i, tipo: 'C', nome: 'C' + (i + 1),
+                     pc: 0, estado: alvo === 0 && p.versao === 'semChecagem' ? 'fim' : 'pronto',
+                     canal: null, precisaLock: false, feitos: 0, alvo: alvo });
+      }
+      var data = []; for (i = 0; i < p.tamanho; i++) data.push(null);
+      return {
+        nivel: 'pipe', params: copiar(p),
+        data: data, nread: 0, nwrite: 0,
+        writeopen: p.produtores,   // escritores ainda abertos
+        lock: null, procs: procs, consumidos: [],
+        passos: 0, giros: 0,
+        sobrescritas: 0, leiturasVazias: 0, wakeupsPerdidos: 0,
+        produtorDormiuCheio: 0, dormiuSemPrecisar: 0
+      };
+    },
+
+    // Quem dorme NÃO é executável (sleep tira o processo da CPU).
+    executaveis: function (e) {
+      return e.procs.filter(function (p) { return p.estado !== 'fim' && p.estado !== 'dormindo'; })
+                    .map(function (p) { return p.id; });
+    },
+
+    passo: function (e0, pid) {
+      var e = copiar(e0), p = e.procs[pid], v = e.params.versao, eventos = [], frase;
+      var def = OPS_PIPE[v][p.tipo], op = def.ops[p.pc], T = e.params.tamanho;
+      e.passos++;
+      function ir(nome) { p.pc = def.ops.indexOf(nome); }
+      function ocupados() { return e.nwrite - e.nread; }
+      function cheio() { return ocupados() >= T; }
+      function vazio() { return e.nread >= e.nwrite; }
+      function pegarLock(depois, texto) {
+        if (e.lock === null) {
+          e.lock = pid; p.estado = 'pronto'; ir(depois);
+          return p.nome + ' ' + texto + ': o lock estava livre e agora é dele.';
+        }
+        p.estado = 'girando'; e.giros++;
+        return p.nome + ' tenta pegar o lock, mas ' + e.procs[e.lock].nome +
+               ' está com ele: gira (spin) e gasta o passo.';
+      }
+      // wakeup(canal): acorda TODOS que dormem nesse canal (como no xv6).
+      function wakeup(canal) {
+        var acordados = [];
+        e.procs.forEach(function (q) {
+          if (q.estado === 'dormindo' && q.canal === canal) {
+            q.estado = 'pronto'; q.canal = null;
+            if (v === 'correta') { q.precisaLock = true; }      // sleep retorna segurando o lock
+            else { q.pc = OPS_PIPE[v][q.tipo].ops.indexOf(q.tipo === 'P' ? 'testaCheio' : 'testaVazio'); }
+            acordados.push(q.nome);
+          }
+        });
+        if (acordados.length) return ' wakeup(&' + canal + ') acorda ' + acordados.join(' e ') + '.';
+        // Ninguém dormindo. Na versão ingênua, se alguém JÁ DECIDIU dormir nesse
+        // canal (passou do teste mas ainda não chamou sleep), o aviso se perde.
+        var sleepOp = canal === 'nread' ? 'sleepR' : 'sleepW';
+        var aponto = e.procs.filter(function (q) {
+          var d = OPS_PIPE[v][q.tipo];
+          return q.estado === 'pronto' && d.ops[q.pc] === sleepOp;
+        });
+        if (v === 'ingenua' && aponto.length) {
+          e.wakeupsPerdidos++;
+          var n = aponto.map(function (q) { return q.nome; }).join(' e ');
+          eventos.push({ tipo: 'wakeupPerdido', texto: 'Wakeup perdido: ' + n +
+                         ' já decidiu dormir, mas ainda não chamou sleep.' });
+          return ' wakeup(&' + canal + ') não acha ninguém dormindo: ' + n +
+                 ' já testou e vai dormir, mas ainda não dormiu. WAKEUP PERDIDO!';
+        }
+        return ' wakeup(&' + canal + ') não acha ninguém dormindo (nada a fazer).';
+      }
+      function escrever() {
+        var item = p.letra + (p.feitos + 1), pos = e.nwrite % T, txt;
+        if (cheio()) {
+          e.sobrescritas++;
+          txt = p.nome + ' escreve ' + item + ' em data[' + pos + '], mas o buffer estava cheio: ' +
+                'apagou ' + e.data[pos] + ', que ninguém leu (sobrescrita).';
+          eventos.push({ tipo: 'erro', texto: 'Sobrescrita: ' + e.data[pos] + ' foi perdido.' });
+        } else {
+          txt = p.nome + ' escreve ' + item + ' em data[' + e.nwrite + ' % ' + T + ' = ' + pos + '].';
+        }
+        e.data[pos] = item; e.nwrite++;
+        return txt + ' nwrite = ' + e.nwrite + '.';
+      }
+      function ler() {
+        var pos = e.nread % T, item = e.data[pos], txt;
+        if (vazio()) {
+          e.leiturasVazias++;
+          txt = p.nome + ' lê data[' + pos + '] com o buffer VAZIO: pega lixo, não um item novo (erro).';
+          eventos.push({ tipo: 'erro', texto: 'Leitura de posição vazia.' });
+        } else {
+          e.consumidos.push(item);
+          txt = p.nome + ' lê ' + item + ' de data[' + e.nread + ' % ' + T + ' = ' + pos + '].';
+        }
+        e.data[pos] = null; e.nread++;
+        return txt + ' nread = ' + e.nread + '.';
+      }
+      function dormir(canal) {
+        if (v === 'correta' && p.precisaLock) {
+          // Voltando de sleep: o xv6 readquire o lock antes de sleep retornar.
+          var t = pegarLock(p.tipo === 'P' ? 'testaCheio' : 'testaVazio', 'volta de sleep e readquire o lock');
+          if (e.lock === pid) { p.precisaLock = false; t += ' Volta a testar a condição (while).'; }
+          return t;
+        }
+        p.estado = 'dormindo'; p.canal = canal;
+        var txt = p.nome + ' chama sleep(&' + canal + ')';
+        if (v === 'correta') { e.lock = null; txt += ', que solta o lock e dorme de uma vez (atômico).'; }
+        else { txt += ' e dorme.'; }
+        if (p.tipo === 'P' && cheio()) e.produtorDormiuCheio++;
+        var semMotivo = p.tipo === 'C' ? !vazio() : !cheio();
+        if (semMotivo) {
+          e.dormiuSemPrecisar++;
+          txt += p.tipo === 'C'
+            ? ' Mas há ' + ocupados() + ' item(ns) no buffer: dormiu à toa, e o aviso já passou.'
+            : ' Mas o buffer já tem espaço: dormiu à toa, e o aviso já passou.';
+          eventos.push({ tipo: 'erro', texto: p.nome + ' dormiu sem precisar (o wakeup veio antes).' });
+        }
+        return txt;
+      }
+
+      switch (op) {
+        case 'acquire':
+          frase = pegarLock(v === 'correta' ? (p.tipo === 'P' ? 'testaCheio' : 'testaVazio')
+                                            : (p.tipo === 'P' ? 'escreve' : 'le'), 'executa acquire');
+          break;
+        case 'testaCheio':
+          if (cheio()) {
+            ir('sleepW');
+            frase = p.nome + ' testa: nwrite (' + e.nwrite + ') == nread (' + e.nread + ') + PIPESIZE (' + T +
+                    ')? Sim, CHEIO. Vai dormir.';
+          } else {
+            ir(v === 'correta' ? 'escreve' : 'escreveWake');
+            frase = p.nome + ' testa: nwrite (' + e.nwrite + ') == nread (' + e.nread + ') + PIPESIZE (' + T +
+                    ')? Não, há espaço.';
+          }
+          break;
+        case 'testaVazio':
+          if (vazio() && e.writeopen > 0) {
+            ir('sleepR');
+            frase = p.nome + ' testa: nread (' + e.nread + ') == nwrite (' + e.nwrite + ')? Sim, VAZIO. Vai dormir.';
+          } else if (vazio()) {
+            if (v === 'correta') { ir('fimRelease'); }
+            else { p.estado = 'fim'; }
+            frase = p.nome + ' testa: buffer vazio e o pipe foi fechado (writeopen = 0): read vai devolver 0.';
+          } else {
+            ir(v === 'correta' ? 'le' : 'leWake');
+            frase = p.nome + ' testa: nread (' + e.nread + ') == nwrite (' + e.nwrite + ')? Não, há item para ler.';
+          }
+          break;
+        case 'sleepW': frase = dormir('nwrite'); break;
+        case 'sleepR': frase = dormir('nread'); break;
+        case 'escreve':
+          frase = escrever();
+          ir(v === 'correta' ? 'wakeupRelease' : 'release');
+          break;
+        case 'le':
+          frase = ler();
+          ir(v === 'correta' ? 'wakeupRelease' : 'release');
+          break;
+        case 'escreveWake':
+          frase = escrever() + wakeup('nread');
+          p.feitos++; ir(p.feitos < e.params.itens ? 'testaCheio' : 'close');
+          break;
+        case 'leWake':
+          frase = ler() + wakeup('nwrite');
+          p.feitos++; ir('testaVazio');
+          break;
+        case 'wakeupRelease':
+          frase = p.nome + ':' + wakeup(p.tipo === 'P' ? 'nread' : 'nwrite');
+          e.lock = null; frase += ' release(&pi->lock).';
+          p.feitos++;
+          if (p.tipo === 'P') ir(p.feitos < e.params.itens ? 'acquire' : 'close'); else ir('acquire');
+          break;
+        case 'release':
+          e.lock = null; p.feitos++;
+          frase = p.nome + ' executa release(&pi->lock).';
+          var meta = p.tipo === 'P' ? e.params.itens : p.alvo;
+          if (p.feitos >= meta) p.estado = 'fim'; else ir('acquire');
+          break;
+        case 'fimRelease':
+          e.lock = null; p.estado = 'fim';
+          frase = p.nome + ' executa release e read devolve 0: não há mais nada para ler.';
+          break;
+        case 'close':
+          if (v === 'correta' && e.lock !== null) {
+            p.estado = 'girando'; e.giros++;
+            frase = p.nome + ' quer fechar o pipe, mas ' + e.procs[e.lock].nome + ' está com o lock: gira.';
+            break;
+          }
+          e.writeopen--; p.estado = 'fim';
+          frase = p.nome + ' terminou de escrever e fecha o pipe (writeopen = ' + (e.writeopen > 0 ? e.writeopen : 0) + ').';
+          if (e.writeopen === 0) frase += wakeup('nread');
+          break;
+      }
+      if (p.estado === 'fim' && op !== 'close' && op !== 'fimRelease' && op !== 'testaVazio') {
+        frase += ' ' + p.nome + ' terminou.';
+      }
+      var marca = p.estado === 'girando' ? 'gira'
+                : p.estado === 'dormindo' ? 'dorme'
+                : { acquire: 'acq', testaCheio: 'testa', testaVazio: 'testa', sleepW: 'acq', sleepR: 'acq',
+                    escreve: 'esc', escreveWake: 'esc', le: 'lê', leWake: 'lê', wakeupRelease: 'rel',
+                    release: 'rel', fimRelease: 'fim', close: 'close' }[op];
+      return { estado: e, frase: frase, eventos: eventos, marca: marca };
+    },
+
+    situacao: function (e) {
+      var terminou = todosTerminaram(e);
+      return { terminou: terminou,
+               travado: !terminou && pipe.executaveis(e).length === 0,
+               erros: e.sobrescritas + e.leiturasVazias };
+    },
+
+    programa: function (e, pid) {
+      var p = e.procs[pid], def = OPS_PIPE[e.params.versao][p.tipo];
+      return { linhas: def.linhas, atual: p.estado === 'fim' ? -1 : p.pc };
+    }
+  };
+
+  /* -------------------------------------------------------------------
+     NÍVEL 3 — JANTAR DOS FILÓSOFOS + GRAFO DE ALOCAÇÃO DE RECURSOS
+     n filósofos (F0..Fn-1) e n garfos (G0..Gn-1). O garfo Gi fica à
+     esquerda de Fi; o da direita é G((i+1) % n). Cada garfo é um recurso
+     de INSTÂNCIA ÚNICA: ciclo no grafo <=> deadlock.
+     Grafo de alocação (lista de arestas):
+       Fi -> Gj   pedido: Fi está esperando o garfo Gj
+       Gj -> Fi   posse:  Gj está com Fi
+     Estratégias (ordem em que cada um pega os garfos):
+       'esquerdo' -> todos pegam o da esquerda primeiro (pode dar ciclo)
+       'ordem'    -> ordem global: sempre o garfo de MENOR número primeiro
+                     (é a regra do xv6 para locks; quebra a espera circular)
+       'canhoto'  -> só F0 pega o da direita primeiro
+     Simplificação: aqui quem espera um garfo fica BLOQUEADO (não gira);
+     volta a ficar pronto quando o garfo é solto e tenta de novo.
+     ------------------------------------------------------------------- */
+  function ordemDosGarfos(i, n, estrategia) {
+    var esq = i, dir = (i + 1) % n;
+    if (estrategia === 'ordem') return [Math.min(esq, dir), Math.max(esq, dir)];
+    if (estrategia === 'canhoto' && i === 0) return [dir, esq];
+    return [esq, dir];
+  }
+
+  // Detecção de ciclo por busca em profundidade (DFS) com três cores:
+  // branco = não visitado, cinza = na pilha atual, preto = terminado.
+  // Achar uma aresta para um nó cinza = achar um ciclo.
+  function acharCiclo(nos, arestas) {
+    var adj = {}, cor = {}, pai = {}, ciclo = null;
+    nos.forEach(function (n) { adj[n] = []; cor[n] = 'branco'; });
+    arestas.forEach(function (a) { adj[a.de].push(a.para); });
+    function dfs(u) {
+      cor[u] = 'cinza';
+      for (var k = 0; k < adj[u].length && !ciclo; k++) {
+        var w = adj[u][k];
+        if (cor[w] === 'cinza') {               // aresta de volta: ciclo!
+          var c = [u], x = u;
+          while (x !== w) { x = pai[x]; c.unshift(x); }
+          ciclo = c;
+        } else if (cor[w] === 'branco') { pai[w] = u; dfs(w); }
+      }
+      cor[u] = 'preto';
+    }
+    nos.forEach(function (n) { if (!ciclo && cor[n] === 'branco') dfs(n); });
+    return ciclo;
+  }
+
+  var filosofos = {
+    id: 'filosofos',
+
+    criar: function (p) {
+      var procs = [], garfos = [];
+      for (var i = 0; i < p.filosofos; i++) {
+        var o = ordemDosGarfos(i, p.filosofos, p.estrategia);
+        procs.push({ id: i, nome: 'F' + i, pc: 0, estado: 'pronto', espera: null,
+                     primeiro: o[0], segundo: o[1] });
+        garfos.push(null);
+      }
+      return { nivel: 'filosofos', params: copiar(p), garfos: garfos, procs: procs, passos: 0 };
+    },
+
+    executaveis: function (e) {
+      return e.procs.filter(function (p) { return p.estado === 'pronto'; })
+                    .map(function (p) { return p.id; });
+    },
+
+    passo: function (e0, pid) {
+      var e = copiar(e0), p = e.procs[pid], frase, eventos = [];
+      e.passos++;
+      if (p.pc === 0 || p.pc === 1) {
+        var g = p.pc === 0 ? p.primeiro : p.segundo, qual = p.pc === 0 ? '1º' : '2º';
+        if (e.garfos[g] === null) {
+          e.garfos[g] = pid; p.espera = null; p.pc++;
+          frase = p.nome + ' pega G' + g + ' (seu ' + qual + ' garfo).' +
+                  (p.pc === 2 ? ' Agora tem os dois.' : '');
+        } else {
+          p.estado = 'esperando'; p.espera = g;
+          var segura = e.garfos.indexOf(pid) >= 0;
+          frase = p.nome + ' quer G' + g + ', que está com ' + e.procs[e.garfos[g]].nome + ': fica esperando' +
+                  (segura ? ' SEGURANDO o garfo que já tem (posse e espera).' : ' sem segurar nenhum garfo.');
+        }
+      } else if (p.pc === 2) {
+        p.pc = 3;
+        frase = p.nome + ' come.';
+      } else {
+        e.garfos[p.primeiro] = null; e.garfos[p.segundo] = null; p.estado = 'fim';
+        var acordados = [];
+        e.procs.forEach(function (q) {
+          if (q.estado === 'esperando' && (q.espera === p.primeiro || q.espera === p.segundo)) {
+            q.estado = 'pronto'; q.espera = null; acordados.push(q.nome);
+          }
+        });
+        frase = p.nome + ' solta G' + p.segundo + ' e G' + p.primeiro + ' e termina.' +
+                (acordados.length ? ' ' + acordados.join(' e ') + ' pode tentar de novo.' : '');
+      }
+      var s = filosofos.situacao(e);
+      if (s.deadlock) {
+        eventos.push({ tipo: 'deadlock', texto: 'Deadlock: ciclo ' + s.ciclo.join(' → ') + ' → ' + s.ciclo[0] + '.' });
+      }
+      var marca = p.estado === 'esperando' ? 'espera' : p.estado === 'fim' ? 'solta' : p.pc === 3 ? 'come' : 'pega';
+      return { estado: e, frase: frase, eventos: eventos, marca: marca };
+    },
+
+    // Grafo de alocação atual: nós e arestas de pedido/posse.
+    grafo: function (e) {
+      var nos = [], arestas = [];
+      e.procs.forEach(function (p) { nos.push(p.nome); });
+      e.garfos.forEach(function (dono, g) {
+        nos.push('G' + g);
+        if (dono !== null) arestas.push({ de: 'G' + g, para: e.procs[dono].nome, tipo: 'posse' });
+      });
+      e.procs.forEach(function (p) {
+        if (p.estado === 'esperando') arestas.push({ de: p.nome, para: 'G' + p.espera, tipo: 'pedido' });
+      });
+      return { nos: nos, arestas: arestas };
+    },
+
+    situacao: function (e) {
+      var gr = filosofos.grafo(e);
+      var ciclo = acharCiclo(gr.nos, gr.arestas);
+      var posseEEspera = e.procs.some(function (p) {
+        return p.estado === 'esperando' && e.garfos.indexOf(p.id) >= 0;
+      });
+      return {
+        terminou: todosTerminaram(e),
+        ciclo: ciclo,
+        deadlock: ciclo !== null,   // instância única: ciclo basta
+        travado: ciclo !== null,
+        coffman: { exclusaoMutua: true, naoPreempcao: true,
+                   posseEEspera: posseEEspera, esperaCircular: ciclo !== null }
+      };
+    },
+
+    programa: function (e, pid) {
+      var p = e.procs[pid];
+      return {
+        linhas: ['pegar(G' + p.primeiro + ');   // 1º garfo',
+                 'pegar(G' + p.segundo + ');   // 2º garfo',
+                 'comer();',
+                 'soltar(G' + p.segundo + '); soltar(G' + p.primeiro + ');'],
+        atual: p.estado === 'fim' ? -1 : p.pc
+      };
+    }
+  };
+
+  /* -------------------------------------------------------------------
+     DESAFIOS (opcionais). minimo = menor número de passos possível,
+     calculado à mão (VERIFICACAO.md) e conferido por busca exaustiva.
+     ------------------------------------------------------------------- */
+  var desafios = [
+    { id: '1.1', nivel: 'contador', minimo: 4,
+      params: { processos: 2, incrementos: 2, lock: false },
+      titulo: 'Provoque uma atualização perdida',
+      objetivo: function (e) { return e.perdas > 0; } },
+    { id: '1.2', nivel: 'contador', minimo: 16,
+      params: { processos: 2, incrementos: 2, lock: true },
+      titulo: 'Agora com lock: tente perder uma atualização',
+      objetivo: function (e) { return todosTerminaram(e) && e.contador === 4; } },
+    { id: '1.3', nivel: 'contador', minimo: 12,
+      params: { processos: 2, incrementos: 3, lock: false },
+      titulo: 'Difícil: termine com o contador em 2',
+      objetivo: function (e) { return todosTerminaram(e) && e.contador === 2; } },
+    { id: '2.1', nivel: 'pipe', minimo: 8,
+      params: { tamanho: 2, produtores: 1, consumidores: 1, itens: 3, versao: 'semChecagem' },
+      titulo: 'Sem checagem: sobrescreva um item que ninguém leu',
+      objetivo: function (e) { return e.sobrescritas > 0; } },
+    { id: '2.2', nivel: 'pipe', minimo: 8,
+      params: { tamanho: 2, produtores: 1, consumidores: 1, itens: 3, versao: 'ingenua' },
+      titulo: 'Versão ingênua: faça os dois dormirem para sempre (lost wakeup)',
+      objetivo: function (e) { return pipe.situacao(e).travado; } },
+    { id: '2.3', nivel: 'pipe', minimo: 31,
+      params: { tamanho: 2, produtores: 1, consumidores: 1, itens: 3, versao: 'correta' },
+      titulo: 'Versão correta: faça o produtor dormir com o buffer cheio e termine tudo sem erro',
+      objetivo: function (e) {
+        return todosTerminaram(e) && e.produtorDormiuCheio > 0 && pipe.situacao(e).erros === 0;
+      } },
+    { id: '3.1', nivel: 'filosofos', minimo: 10,
+      params: { filosofos: 5, estrategia: 'esquerdo' },
+      titulo: 'Todos pegam o esquerdo: provoque um deadlock',
+      objetivo: function (e) { return filosofos.situacao(e).deadlock; } },
+    { id: '3.2', nivel: 'filosofos', minimo: 20,
+      params: { filosofos: 5, estrategia: 'ordem' },
+      titulo: 'Ordem global: tente travar; depois faça todos comerem',
+      objetivo: function (e) { return todosTerminaram(e); } }
+  ];
+
+  return {
+    niveis: { contador: contador, pipe: pipe, filosofos: filosofos },
+    desafios: desafios
+  };
+})();
+</script>
+
+<script id="interface">
+/* =====================================================================
+   INTERFACE — liga a lógica (objeto Logica) à página.
+   Estado da interface:
+     app.hist  = pilha de passos [{estado, frase, eventos, pid, marca}].
+                 O último é o estado atual; "Voltar 1 passo" só desempilha.
+     app.params = parâmetros de cada nível (o usuário escolhe no formulário).
+     app.desafio = desafio em andamento (ou null no modo livre).
+   Nenhuma requisição de rede; progresso salvo só no localStorage.
+   ===================================================================== */
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var NIVEIS = ['contador', 'pipe', 'filosofos'];
+  var COR = function (i) { return 'var(--p' + (i % 6) + ')'; };
+
+  /* ---------- armazenamento local, sempre protegido ----------
+     localStorage pode falhar (modo privado, arquivo aberto do disco em
+     alguns navegadores, cota cheia). Sem ele o simulador funciona igual;
+     só não lembra as estrelas. */
+  var Armazem = {
+    ler: function (k, padrao) {
+      try { var v = window.localStorage.getItem(k); return v ? JSON.parse(v) : padrao; }
+      catch (e) { return padrao; }
+    },
+    gravar: function (k, v) {
+      try { window.localStorage.setItem(k, JSON.stringify(v)); return true; }
+      catch (e) { return false; }
+    },
+    apagar: function (k) { try { window.localStorage.removeItem(k); } catch (e) { /* sem armazenamento */ } }
+  };
+  var CHAVE_PROG = 'simuladorSO.progresso.v1';
+  var CHAVE_TUT = 'simuladorSO.tutorialVisto.v1';
+
+  /* ---------- parâmetros: padrão e opções válidas (D7) ----------
+     Os campos são <select>: o usuário só consegue escolher valores válidos. */
+  var PADRAO = {
+    contador: { processos: 2, incrementos: 2, lock: false },
+    pipe: { tamanho: 2, produtores: 1, consumidores: 1, itens: 3, versao: 'correta' },
+    filosofos: { filosofos: 5, estrategia: 'esquerdo' }
+  };
+  function faixa(a, b) { var r = []; for (var i = a; i <= b; i++) r.push(i); return r; }
+  var CAMPOS = {
+    contador: [
+      { nome: 'processos', rotulo: 'Processos', opcoes: faixa(2, 4) },
+      { nome: 'incrementos', rotulo: 'Incrementos por processo', opcoes: faixa(1, 5) },
+      { nome: 'lock', rotulo: 'Proteger com lock (spinlock)', tipo: 'check',
+        ajuda: 'Desligado: contador++ sem proteção. Ligado: acquire e release em volta.' }
+    ],
+    pipe: [
+      { nome: 'versao', rotulo: 'Versão', opcoes: [
+        ['correta', 'Correta (como o xv6)'],
+        ['semChecagem', 'Sem checagem de cheio/vazio'],
+        ['ingenua', 'Ingênua: teste e sleep separados, sem lock']] },
+      { nome: 'tamanho', rotulo: 'PIPESIZE (posições do buffer)', opcoes: faixa(1, 8) },
+      { nome: 'produtores', rotulo: 'Produtores', opcoes: faixa(1, 2) },
+      { nome: 'consumidores', rotulo: 'Consumidores', opcoes: faixa(1, 2) },
+      { nome: 'itens', rotulo: 'Itens por produtor', opcoes: faixa(1, 6) }
+    ],
+    filosofos: [
+      { nome: 'filosofos', rotulo: 'Filósofos', opcoes: faixa(3, 6) },
+      { nome: 'estrategia', rotulo: 'Estratégia para pegar os garfos', opcoes: [
+        ['esquerdo', 'Todos pegam o esquerdo primeiro'],
+        ['ordem', 'Ordem global (menor número primeiro)'],
+        ['canhoto', 'Um canhoto (F0 pega o direito primeiro)']] }
+    ]
+  };
+
+  /* ---------- textos dos desafios ---------- */
+  var DICAS = {
+    '1.1': 'Faça P0 ler. Antes de P0 escrever, faça P1 ler e escrever. Depois deixe P0 escrever.',
+    '1.2': 'Tente a mesma ordem do desafio anterior e observe quem gira.',
+    '1.3': 'Deixe P0 ler 0 e parar. Faça P1 incrementar duas vezes; então P0 escreve 1. Agora P1 lê esse 1 e para; P0 termina tudo; por fim P1 escreve.',
+    '2.1': 'Rode só o produtor e não deixe o consumidor ler.',
+    '2.2': 'Faça o consumidor testar “vazio” e pare antes do sleep. Então encha o buffer com o produtor até ele também decidir dormir.',
+    '2.3': 'Rode o produtor até o buffer encher e ele dormir. Depois o consumidor lê um item, o que acorda o produtor.',
+    '3.1': 'Faça cada filósofo pegar o 1º garfo antes que qualquer um tente pegar o 2º.',
+    '3.2': 'Tente a mesma ordem do desafio anterior e veja quem fica esperando sem segurar nada.'
+  };
+  var PORQUE = {
+    '1.1': 'contador++ são dois passos: ler e escrever. Quando outro processo escreve entre a sua leitura e a sua escrita, você escreve um valor velho + 1 por cima do trabalho dele. Isso é uma condição de corrida: o resultado depende da ordem em que os passos são intercalados.',
+    '1.2': 'Com o lock, ler e escrever ficam dentro da seção crítica, e só quem fez acquire entra. Quem chega com o lock ocupado gira até o release. Nenhuma intercalação consegue separar a leitura da escrita de um processo. O preço são os passos gastos girando.',
+    '1.3': 'P0 leu 0 e ficou parado; P1 avançou; P0 escreveu 1 e apagou o trabalho de P1; P1 leu esse 1, esperou P0 terminar e escreveu 2 por cima de tudo. Com 2 processos, o menor resultado possível é 2, não importa quantos incrementos.',
+    '2.1': 'Sem testar se o buffer está cheio, o produtor escreve em data[nwrite % PIPESIZE] mesmo quando essa posição guarda um item que ninguém leu. O lock impede que dois mexam ao mesmo tempo, mas não substitui a condição: é preciso esperar (sleep) quando cheio e quando vazio.',
+    '2.2': 'O consumidor testou “vazio” e decidiu dormir, mas antes de dormir o produtor escreveu e chamou wakeup. Como ninguém dormia ainda, o aviso se perdeu. Depois os dois dormiram, cada um esperando o aviso do outro. O xv6 evita isso testando a condição com o lock e usando sleep(canal, lock), que solta o lock e dorme de uma vez: ninguém consegue chamar wakeup no meio.',
+    '2.3': 'Com o buffer cheio (nwrite == nread + PIPESIZE), o produtor dormiu em &nwrite e soltou o lock. O consumidor leu, chamou wakeup(&nwrite), e o produtor acordou, readquiriu o lock e testou de novo. Nada foi sobrescrito e nenhum aviso se perdeu.',
+    '3.1': 'Cada filósofo pegou o garfo da esquerda e ficou esperando o da direita, que está com o vizinho. As quatro condições de Coffman aparecem juntas: exclusão mútua, posse e espera, não preempção e espera circular, que é o ciclo no grafo. Como cada garfo é um recurso de instância única, o ciclo significa deadlock.',
+    '3.2': 'Com a ordem global, todos pegam primeiro o garfo de menor número. O último filósofo pede G0 antes do outro garfo e, se G0 está ocupado, espera sem segurar nada. A espera circular não se forma, e sempre alguém consegue comer e soltar os garfos.'
+  };
+
+  /* ---------- painel "Como o xv6 e o Linux fazem" ---------- */
+  var PAINEL = {
+    contador:
+      '<h3>xv6: spinlock (kernel/spinlock.c, simplificado)</h3>' +
+      '<pre>void acquire(struct spinlock *lk) {\n  push_off();   // desliga as interrupções nesta CPU\n' +
+      '  while (__sync_lock_test_and_set(&amp;lk-&gt;locked, 1) != 0)\n    ;           // gira; no RISC-V vira amoswap.w.aq\n' +
+      '  __sync_synchronize();\n  lk-&gt;cpu = mycpu();\n}\n\nvoid release(struct spinlock *lk) {\n  lk-&gt;cpu = 0;\n' +
+      '  __sync_synchronize();\n  __sync_lock_release(&amp;lk-&gt;locked);  // locked = 0\n  pop_off();    // reativa as interrupções\n}</pre>' +
+      '<p>A troca atômica (amoswap) escreve 1 em <code>locked</code> e devolve o valor antigo num passo só. Se devolveu 0, o lock estava livre e agora é seu; se devolveu 1, alguém já tinha o lock e o laço gira.</p>' +
+      '<p><strong>Interrupções e CPUs.</strong> No xv6, acquire chama push_off e desliga as interrupções antes de marcar o lock. Assim, quem segura o lock não é interrompido naquela CPU; quem gira é outra CPU. No simulador, cada processo representa um fluxo concorrente (como se estivesse noutra CPU), e os passos intercalados representam essa concorrência.</p>' +
+      '<h3>Linux: futex</h3>' +
+      '<p>Um mutex de espaço de usuário no Linux (como o pthread_mutex, construído sobre o futex) tenta pegar o lock com uma operação atômica no próprio espaço de usuário, sem chamar o núcleo. Só se houver disputa ele chama <code>futex(FUTEX_WAIT)</code> e dorme no núcleo; quem solta o lock chama <code>futex(FUTEX_WAKE)</code> se houver alguém esperando.</p>' +
+      '<h3>Nota: semáforo</h3>' +
+      '<p>O núcleo do xv6 não usa semáforo; em espaço de usuário dá para montar um com pipe (um byte no pipe = uma permissão). Pegar uma permissão é ler 1 byte, que bloqueia se o pipe estiver vazio; devolver é escrever 1 byte.</p>',
+    pipe:
+      '<h3>xv6: pipe (kernel/pipe.c, simplificado)</h3>' +
+      '<pre>#define PIPESIZE 512\nstruct pipe {\n  struct spinlock lock;\n  char data[PIPESIZE];\n' +
+      '  uint nread;     // total de bytes lidos\n  uint nwrite;    // total de bytes escritos\n  int readopen, writeopen;\n};\n\n' +
+      'pipewrite:  acquire(&amp;pi-&gt;lock);\n  para cada byte:\n    if (pi-&gt;nwrite == pi-&gt;nread + PIPESIZE) {  // cheio\n' +
+      '      wakeup(&amp;pi-&gt;nread);\n      sleep(&amp;pi-&gt;nwrite, &amp;pi-&gt;lock);\n    } else\n' +
+      '      pi-&gt;data[pi-&gt;nwrite++ % PIPESIZE] = byte;\n  wakeup(&amp;pi-&gt;nread);  release(&amp;pi-&gt;lock);\n\n' +
+      'piperead:  acquire(&amp;pi-&gt;lock);\n  while (pi-&gt;nread == pi-&gt;nwrite &amp;&amp; pi-&gt;writeopen)  // vazio\n' +
+      '    sleep(&amp;pi-&gt;nread, &amp;pi-&gt;lock);\n  copia bytes de data[pi-&gt;nread++ % PIPESIZE]\n' +
+      '  wakeup(&amp;pi-&gt;nwrite);  release(&amp;pi-&gt;lock);</pre>' +
+      '<p><code>nread</code> e <code>nwrite</code> só crescem; a posição no buffer é o resto da divisão por PIPESIZE. Cheio: <code>nwrite == nread + PIPESIZE</code>. Vazio: <code>nwrite == nread</code>.</p>' +
+      '<h3>sleep/wakeup e o lost wakeup</h3>' +
+      '<p><code>sleep(canal, lock)</code> marca o processo como dormindo e solta o lock como uma coisa só: por dentro, ele pega o lock do processo antes de soltar o do pipe, e wakeup também precisa desse lock. Como a condição foi testada segurando o lock do pipe, ninguém consegue chamar wakeup entre o teste e o sleep. Ao acordar, sleep readquire o lock, e o laço testa a condição de novo.</p>' +
+      '<p>Na versão ingênua deste simulador, teste e sleep são passos separados e sem lock: um wakeup que cai no meio se perde (lost wakeup).</p>' +
+      '<h3>Linux</h3>' +
+      '<p>No Linux, o pipe também é um buffer circular no núcleo (64 KiB por padrão). Quem não pode ler ou escrever dorme numa fila de espera (wait queue) e é acordado quando a situação muda. A regra de testar a condição de um jeito que não perca o aviso é a mesma.</p>',
+    filosofos:
+      '<h3>xv6: ordem global de locks</h3>' +
+      '<p>O livro do xv6 (cap. 6) explica que, se um caminho do código precisa de vários locks ao mesmo tempo, todos os caminhos devem adquiri-los na mesma ordem global. Assim não há espera circular e não há deadlock. A estratégia “ordem global” deste nível faz isso com os garfos: sempre o de menor número primeiro.</p>' +
+      '<h3>Linux: lockdep</h3>' +
+      '<p>O lockdep, detector do núcleo Linux, registra durante a execução em que ordem cada classe de lock é adquirida. Se num lugar o código pega A e depois B, e noutro pega B e depois A, ele avisa sobre o possível deadlock, mesmo que o travamento ainda não tenha acontecido.</p>' +
+      '<h3>Grafo de alocação</h3>' +
+      '<p>Com recursos de instância única (um garfo é um só), um ciclo no grafo significa deadlock. Com recursos de várias instâncias, o ciclo é necessário mas não suficiente (veja o glossário).</p>'
+  };
+
+  /* ---------- glossário ---------- */
+  var GLOSSARIO = [
+    ['Escalonador', 'Parte do sistema operacional que decide qual processo usa a CPU a cada momento. Neste simulador, é você.'],
+    ['Condição de corrida', 'Quando o resultado depende da ordem em que processos concorrentes são intercalados. Exemplo: dois contador++ que terminam somando só 1.'],
+    ['Seção crítica', 'Trecho de código que mexe em dados compartilhados e não pode ser executado por dois processos ao mesmo tempo.'],
+    ['Operação atômica', 'Operação que acontece inteira, sem que outro processo consiga ver um meio-termo. No RISC-V, amoswap troca um valor na memória atomicamente.'],
+    ['Lock (trava)', 'Variável que garante exclusão mútua: acquire para entrar na seção crítica, release para sair.'],
+    ['Spinlock', 'Lock em que quem espera fica girando num laço, testando de novo, em vez de dormir. É o lock básico do xv6. Gasta CPU, mas serve para esperas curtas.'],
+    ['Futex', 'Mecanismo do Linux: o lock é tentado no espaço de usuário com uma operação atômica; só havendo disputa o processo chama o núcleo e dorme.'],
+    ['Semáforo', 'Contador de permissões com duas operações: pegar (espera se for 0) e devolver. O núcleo do xv6 não usa semáforo; em espaço de usuário dá para montar um com pipe (um byte no pipe = uma permissão).'],
+    ['Buffer circular', 'Vetor de tamanho fixo usado como fila: ao chegar ao fim, volta ao início. No pipe do xv6, a posição é índice % PIPESIZE.'],
+    ['sleep / wakeup', 'sleep(canal, lock) faz o processo dormir esperando um evento e solta o lock de forma atômica; wakeup(canal) acorda todos que dormem nesse canal.'],
+    ['Lost wakeup', 'Aviso perdido: o wakeup acontece depois de um processo testar a condição e antes de ele dormir. Ele dorme mesmo assim e pode nunca mais acordar.'],
+    ['Deadlock (impasse)', 'Conjunto de processos em que cada um espera um recurso que está com outro do mesmo conjunto. Ninguém avança.'],
+    ['Condições de Coffman', 'As quatro condições que precisam valer juntas para haver deadlock: exclusão mútua, posse e espera, não preempção e espera circular. Quebrar qualquer uma evita o deadlock.'],
+    ['Grafo de alocação de recursos', 'Grafo com processos e recursos. Seta processo → recurso é pedido; seta recurso → processo é posse. Com recursos de instância única, ciclo significa deadlock. Com recursos de várias instâncias, o ciclo é necessário mas não suficiente: pode haver ciclo sem deadlock, se uma instância livre ou liberada atender um pedido do ciclo.'],
+    ['Ordem global de locks', 'Regra de prevenção: todos adquirem os locks numa mesma ordem. Isso impede a espera circular. É a regra que o xv6 segue.']
+  ];
+
+  /* ---------- tutorial de 3 telas ---------- */
+  var TUTORIAL = [
+    ['Você é o escalonador',
+     '<p>Num sistema operacional, vários processos rodam intercalados, e quem decide a ordem é o escalonador. Aqui quem decide é você: a cada passo, escolha qual processo executa a próxima linha do seu pseudocódigo.</p><p>A linha atual de cada processo aparece destacada com ►.</p>'],
+    ['Como usar',
+     '<p>Clique em “Executar” no cartão de um processo, ou use as teclas 1 a 6. “Passo aleatório” e “Auto” deixam o escalonador escolher ao acaso. “Voltar 1 passo” desfaz o último passo.</p><p>Em “O que acabou de acontecer”, cada passo é explicado numa frase. A linha do tempo no fim da página mostra a intercalação que você escolheu.</p>'],
+    ['Três níveis e os desafios',
+     '<ol><li>Contador compartilhado: condição de corrida e spinlock.</li><li>Produtor-consumidor no pipe do xv6: sleep, wakeup e lost wakeup.</li><li>Jantar dos filósofos: deadlock e grafo de alocação.</li></ol><p>Os desafios são opcionais: provoque o bug, depois tente de novo com a correção. Glossário e ajuda ficam no topo da página.</p>']
+  ];
+
+  /* ---------- estado da interface ---------- */
+  var app = {
+    nivel: 'contador',
+    params: JSON.parse(JSON.stringify(PADRAO)),
+    hist: [], desafio: null, desafioConcluido: false, usouDica: false,
+    autoTimer: null, velocidade: 1, desfazerReinicio: null, aviso: null, anim: null
+  };
+  function N() { return Logica.niveis[app.nivel]; }
+  function atual() { return app.hist[app.hist.length - 1]; }
+  function E() { return atual().estado; }
+
+  function fraseInicial() {
+    var p = app.params[app.nivel];
+    if (app.nivel === 'contador') {
+      return 'Início: contador = 0. Cada processo vai somar 1 ao contador ' + p.incrementos +
+             (p.incrementos > 1 ? ' vezes' : ' vez') + '. Ao final, o certo é ' + (p.processos * p.incrementos) + '. Escolha quem roda.';
+    }
+    if (app.nivel === 'pipe') return 'Início: buffer vazio (nread = nwrite = 0). Produtores escrevem itens e consumidores leem. Escolha quem roda.';
+    return 'Início: garfos na mesa. Cada filósofo precisa de dois garfos para comer. Escolha quem roda.';
+  }
+
+  /* ---------- ações ---------- */
+  function iniciar() {
+    pararAuto();
+    app.hist = [{ estado: N().criar(app.params[app.nivel]), frase: fraseInicial(), eventos: [], pid: null }];
+    app.desafioConcluido = false; app.aviso = null;
+    desenhar();
+  }
+
+  function executar(pid) {
+    if (N().executaveis(E()).indexOf(pid) < 0) return;
+    var antes = E(), r = N().passo(antes, pid);
+    app.hist.push({ estado: r.estado, frase: r.frase, eventos: r.eventos, pid: pid, marca: r.marca });
+    app.desfazerReinicio = null; app.aviso = null;
+    app.anim = { pid: pid, antes: antes, marca: r.marca };   // só este desenho anima
+    desenhar();
+    app.anim = null;
+    verificarDesafio();
+    if (N().executaveis(E()).length === 0) pararAuto();
+  }
+
+  function proximoAleatorio() {
+    var ex = N().executaveis(E());
+    if (!ex.length) { pararAuto(); app.aviso = motivoParado(); desenhar(); return; }
+    executar(ex[Math.floor(Math.random() * ex.length)]);
+  }
+
+  function motivoParado() {
+    var s = N().situacao(E());
+    if (s.terminou) return 'Todos os processos terminaram. Use “Reiniciar” ou “Voltar 1 passo”.';
+    return 'Nenhum processo pode rodar: o sistema travou. Use “Voltar 1 passo” para tentar outra ordem.';
+  }
+
+  function voltar() {
+    if (app.hist.length > 1) { pararAuto(); app.hist.pop(); app.desafioConcluido = false; app.aviso = null; desenhar(); }
+  }
+
+  function reiniciar() {
+    var antes = app.hist.length > 1 ? app.hist : null;
+    iniciar();
+    if (antes) { app.desfazerReinicio = antes; desenhar(); }
+  }
+
+  function desfazerReinicio() {
+    if (!app.desfazerReinicio) return;
+    app.hist = app.desfazerReinicio; app.desfazerReinicio = null; desenhar();
+  }
+
+  function alternarAuto() { if (app.autoTimer) pararAuto(); else iniciarAuto(); }
+  function iniciarAuto() {
+    if (!N().executaveis(E()).length) { app.aviso = motivoParado(); desenhar(); return; }
+    $('btAuto').setAttribute('aria-pressed', 'true'); $('btAuto').textContent = 'Pausar';
+    $('fraseAtual').setAttribute('aria-live', 'off');   // sem enxurrada de anúncios no leitor de tela
+    (function tique() {
+      app.autoTimer = setTimeout(function () {
+        if (!app.autoTimer) return;
+        proximoAleatorio();
+        if (app.autoTimer) tique();
+      }, 1200 / app.velocidade);
+    })();
+  }
+  function pararAuto() {
+    if (app.autoTimer) clearTimeout(app.autoTimer);
+    app.autoTimer = null;
+    var b = $('btAuto'); if (b) { b.setAttribute('aria-pressed', 'false'); b.textContent = 'Auto'; }
+    var f = $('fraseAtual');
+    if (f && f.getAttribute('aria-live') === 'off') {   // volta a anunciar e lê o passo em que parou
+      f.setAttribute('aria-live', 'polite');
+      setTimeout(function () { var t = f.textContent; f.textContent = ''; f.textContent = t; }, 60);
+    }
+  }
+  function mudarVelocidade(delta) {
+    var sel = $('velocidade'), i = sel.selectedIndex + delta;
+    if (i < 0 || i >= sel.options.length) return;
+    sel.selectedIndex = i; app.velocidade = parseFloat(sel.value);
+  }
+
+  function trocarNivel(nivel) {
+    if (app.desafio && app.desafio.nivel !== nivel) sairDesafio(false);
+    app.nivel = nivel;
+    desenharFormulario(); desenharPainelSO();
+    iniciar();
+  }
+
+  /* ---------- desafios ---------- */
+  function progresso() { return Armazem.ler(CHAVE_PROG, {}); }
+  function iniciarDesafio(id) {
+    var d = Logica.desafios.filter(function (x) { return x.id === id; })[0];
+    app.desafio = d; app.usouDica = false;
+    app.nivel = d.nivel; app.params[d.nivel] = JSON.parse(JSON.stringify(d.params));
+    $('dTitulo').textContent = 'Desafio ' + d.id + ': ' + d.titulo;
+    $('dMeta').textContent = 'Menor número possível de passos: ' + d.minimo + '.';
+    $('dDica').hidden = true; $('dDica').textContent = DICAS[d.id];
+    $('btDica').disabled = false; $('btDica').textContent = 'Ver dica';
+    $('faixaDesafio').hidden = false;
+    fecharDialogos();
+    desenharFormulario(); desenharPainelSO();
+    iniciar();
+    $('palco').focus();
+  }
+  function sairDesafio(reiniciarDepois) {
+    app.desafio = null; $('faixaDesafio').hidden = true;
+    if (reiniciarDepois !== false) { desenharFormulario(); iniciar(); }
+  }
+  function verificarDesafio() {
+    var d = app.desafio;
+    if (!d || app.desafioConcluido || !d.objetivo(E())) return;
+    app.desafioConcluido = true; pararAuto();
+    var passos = E().passos;
+    var crit = [
+      ['Concluiu o desafio', true],
+      ['Sem ver a dica', !app.usouDica],
+      ['Em até ' + d.minimo + ' passos (você usou ' + passos + ')', passos <= d.minimo]
+    ];
+    var estrelas = crit.filter(function (c) { return c[1]; }).length;
+    var prog = progresso(), antes = prog[d.id] || 0;
+    if (estrelas > antes) prog[d.id] = estrelas;
+    var salvou = Armazem.gravar(CHAVE_PROG, prog);
+    $('resTitulo').textContent = 'Desafio ' + d.id + ' concluído';
+    $('resEstrelas').innerHTML = textoEstrelas(estrelas) + ' <span class="so-leitor">' + estrelas + ' de 3 estrelas</span>';
+    $('resCriterios').innerHTML = crit.map(function (c) {
+      return '<li class="' + (c[1] ? 'feito' : 'nao-feito') + '">' + (c[1] ? '✓ ' : '✗ ') + c[0] + '</li>';
+    }).join('');
+    $('resPorque').textContent = PORQUE[d.id];
+    $('resSalvo').textContent = salvou ? (estrelas > antes ? 'Progresso salvo neste navegador.' : 'Seu melhor resultado continua salvo.')
+                                       : 'Este navegador não permite salvar o progresso; o simulador funciona igual.';
+    var idx = Logica.desafios.indexOf(d);
+    $('resProximo').hidden = idx === Logica.desafios.length - 1;
+    desenharTotalEstrelas();
+    abrir('dlgResultado');
+  }
+  function textoEstrelas(n) { return '★★★'.slice(0, n) + '☆☆☆'.slice(0, 3 - n); }
+  function desenharTotalEstrelas() {
+    var prog = progresso(), total = 0;
+    Object.keys(prog).forEach(function (k) { total += prog[k]; });
+    $('totalEstrelas').textContent = '(' + total + ' de ' + Logica.desafios.length * 3 + ' estrelas)';
+  }
+  function desenharListaDesafios() {
+    var prog = progresso(), html = '';
+    var titulos = { contador: '1. Contador compartilhado', pipe: '2. Produtor-consumidor (pipe)', filosofos: '3. Filósofos e deadlock' };
+    NIVEIS.forEach(function (nv) {
+      html += '<h3>' + titulos[nv] + '</h3><ul class="lista-desafios">';
+      Logica.desafios.filter(function (d) { return d.nivel === nv; }).forEach(function (d) {
+        var est = prog[d.id] || 0;
+        // grade fixa (número | título | estrelas | botão): todas as linhas alinham igual
+        html += '<li><span class="id">' + d.id + '</span><span class="nome">' + d.titulo + '</span>' +
+                '<span class="estrelas-txt" aria-hidden="true">' + textoEstrelas(est) + '</span>' +
+                '<span class="so-leitor">' + est + ' de 3 estrelas</span>' +
+                '<button class="bt" type="button" data-desafio="' + d.id + '">Começar ' + d.id + '</button></li>';
+      });
+      html += '</ul>';
+    });
+    $('desLista').innerHTML = html;
+    $('apagarMsg').textContent = '';
+    $('btApagar').textContent = 'Apagar progresso'; $('btApagar').dataset.confirmar = '';
+  }
+
+  /* ---------- diálogos ---------- */
+  function abrir(id) {
+    pararAuto();
+    var d = $(id);
+    if (typeof d.showModal === 'function') { if (!d.open) d.showModal(); } else d.setAttribute('open', '');
+  }
+  function fecharDialogos() {
+    ['dlgParams', 'dlgTutorial', 'dlgGlossario', 'dlgAjuda', 'dlgDesafios', 'dlgResultado'].forEach(function (id) {
+      var d = $(id); if (d.open) { if (typeof d.close === 'function') d.close(); else d.removeAttribute('open'); }
+    });
+  }
+  function algumDialogoAberto() {
+    return ['dlgParams', 'dlgTutorial', 'dlgGlossario', 'dlgAjuda', 'dlgDesafios', 'dlgResultado'].some(function (id) { return $(id).open; });
+  }
+  var tutPos = 0;
+  function mostrarTutorial(i) {
+    tutPos = i;
+    $('tutPasso').textContent = 'Tutorial, tela ' + (i + 1) + ' de ' + TUTORIAL.length;
+    $('tutTitulo').textContent = TUTORIAL[i][0];
+    $('tutTexto').innerHTML = TUTORIAL[i][1];
+    $('tutAnterior').disabled = i === 0;
+    $('tutProximo').textContent = i === TUTORIAL.length - 1 ? 'Começar' : 'Próximo';
+  }
+  function fecharTutorial() { Armazem.gravar(CHAVE_TUT, true); $('dlgTutorial').close(); }
+
+  /* ---------- modo apresentação ---------- */
+  function alternarApresentacao() {
+    var on = !document.documentElement.classList.contains('apresentacao');
+    document.documentElement.classList.toggle('apresentacao', on);
+    $('btApresentacao').setAttribute('aria-pressed', String(on));
+    try {
+      if (on && document.documentElement.requestFullscreen && !document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(function () { /* navegador recusou: segue sem tela cheia */ });
+      } else if (!on && document.fullscreenElement && document.exitFullscreen) {
+        document.exitFullscreen().catch(function () {});
+      }
+    } catch (err) { /* sem tela cheia, o resto funciona */ }
+    if (on && !app.desafio) {           // cenário pré-carregado do nível atual
+      app.params[app.nivel] = JSON.parse(JSON.stringify(PADRAO[app.nivel]));
+      desenharFormulario(); iniciar();
+    }
+  }
+
+  /* =================== DESENHO =================== */
+  /* Ícones em SVG (nada de emoji): traço na cor do texto. */
+  var ICONES = {
+    play: '<path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="none"/>',
+    gira: '<path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M18 2.5v4h-4"/>',
+    dorme: '<path d="M19.5 14.5A8 8 0 0 1 9.5 4.5a8 8 0 1 0 10 10z"/>',
+    espera: '<path d="M7 3h10M7 21h10"/><path d="M8 3c0 5 8 5 8 9s-8 4-8 9M16 3c0 5-8 5-8 9s8 4 8 9"/>',
+    fim: '<path d="M5 12.5l4.5 4.5L19 7.5"/>',
+    lockF: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    lockA: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 7.6-1.8"/>',
+    alerta: '<path d="M12 3.5l9.5 17h-19z"/><path d="M12 10v4.5M12 17.5v.5"/>'
+  };
+  function ic(n) {
+    return '<svg class="ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' + ICONES[n] + '</svg>';
+  }
+  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+  function cores(i) { var k = i % 6; return '--c:var(--p' + k + ');--co:var(--p' + k + '-on);--cs:var(--p' + k + '-suave)'; }
+
+  var TITULOS = {
+    contador: ['Contador compartilhado', 'Os processos fazem contador++ ao mesmo tempo. Quem roda a cada passo é você.'],
+    pipe: ['Produtor-consumidor no pipe', 'Buffer circular do xv6: a posição é o índice % PIPESIZE. Quem roda a cada passo é você.'],
+    filosofos: ['Jantar dos filósofos', 'Cada filósofo precisa de dois garfos para comer; Gi fica à esquerda de Fi. Quem roda a cada passo é você.']
+  };
+  var NOME_VERSAO = { correta: 'Versão correta (como o xv6)', semChecagem: 'Versão sem checagem', ingenua: 'Versão ingênua (lost wakeup)' };
+  var NOME_ESTRATEGIA = { esquerdo: 'todos pegam o esquerdo primeiro', ordem: 'ordem global', canhoto: 'um canhoto (F0)' };
+  function plural(n, um, varios) { return n + ' ' + (n === 1 ? um : varios); }
+  function resumoParams() {
+    var p = app.params[app.nivel];
+    if (app.nivel === 'contador') return plural(p.processos, 'processo', 'processos') + ', ' + plural(p.incrementos, 'incremento', 'incrementos') + ', ' + (p.lock ? 'com lock' : 'sem lock');
+    if (app.nivel === 'pipe') return NOME_VERSAO[p.versao] + ', PIPESIZE ' + p.tamanho + ', ' + plural(p.produtores, 'produtor', 'produtores') + ', ' + plural(p.consumidores, 'consumidor', 'consumidores') + ', ' + plural(p.itens, 'item', 'itens') + ' por produtor';
+    return plural(p.filosofos, 'filósofo', 'filósofos') + ', ' + NOME_ESTRATEGIA[p.estrategia];
+  }
+
+  function desenhar() {
+    var anim = app.anim || {};
+    desenharAbas(); desenharPalco(anim); desenharNarracao(anim);
+    desenharLog(); desenharLinhaTempo(anim); desenharCodigo(); desenharControles();
+  }
+
+  function desenharAbas() {
+    document.querySelectorAll('.niveis [role=tab]').forEach(function (b) {
+      var sel = b.dataset.nivel === app.nivel;
+      b.setAttribute('aria-selected', String(sel)); b.tabIndex = sel ? 0 : -1;
+    });
+    $('painelNivel').setAttribute('aria-labelledby', 'aba-' + app.nivel);
+  }
+
+  function desenharControles() {
+    var ex = N().executaveis(E()).length > 0;
+    $('btProximo').disabled = !ex;
+    $('btAuto').disabled = !ex && !app.autoTimer;
+    $('btVoltar').disabled = app.hist.length <= 1;
+    $('contaPassos').textContent = 'Passo ' + E().passos;
+  }
+
+  /* ---------- narração + "kernel$ alerta" ----------
+     Atualização perdida, sobrescrita, lost wakeup e deadlock são erros de
+     PROCESSOS: o kernel não cai. Por isso a linha diz "alerta", nunca "panic"
+     (o xv6 só chama panic() em erros do próprio kernel, como acquire de um
+     lock que a CPU já segura — situação que este simulador não produz). */
+  function textoTravado(s) {
+    if (app.nivel === 'filosofos' && s.ciclo) return 'deadlock: ciclo ' + s.ciclo.join(' → ') + ' → ' + s.ciclo[0];
+    return 'travado: todos dormindo (lost wakeup)';
+  }
+  function rotuloAlerta(ev) {
+    if (ev.tipo === 'perda') return 'atualização perdida';
+    if (ev.tipo === 'wakeupPerdido') return 'wakeup perdido';
+    if (ev.tipo === 'deadlock') return 'deadlock: ' + ev.texto.replace(/^Deadlock: /, '');
+    if (/^Sobrescrita/.test(ev.texto)) return 'item sobrescrito antes de ser lido';
+    if (/^Leitura/.test(ev.texto)) return 'leitura de posição vazia';
+    return 'processo dormiu depois que o aviso já tinha passado';
+  }
+  function desenharNarracao(anim) {
+    var h = atual(), e = h.estado, s = N().situacao(e), grade = $('painelNivel');
+    var evRuim = app.aviso ? [] : h.eventos.filter(function (x) { return x.tipo !== 'giro'; });
+    var travou = !!(s.travado || s.deadlock);
+    var ruim = evRuim.length > 0 || travou;
+    grade.classList.toggle('alerta', ruim);
+    grade.classList.remove('tremor');
+    if (ruim && anim.pid !== undefined) { void grade.offsetWidth; grade.classList.add('tremor'); }   // tremor só no passo que causou
+    $('alertaKernel').hidden = !ruim;
+    $('alertaTxt').textContent = !ruim ? '' : 'alerta: ' + (travou ? textoTravado(s) : rotuloAlerta(evRuim[evRuim.length - 1]));
+    $('fraseAtual').textContent = app.aviso || h.frase;
+    $('eventos').innerHTML = (app.aviso ? [] : h.eventos).map(function (ev) {
+      return '<li class="' + (ev.tipo === 'giro' ? 'giro' : '') + '">' + ic(ev.tipo === 'giro' ? 'gira' : 'alerta') + esc(ev.texto) + '</li>';
+    }).join('');
+    $('resumoFinal').innerHTML = resumoFinal(e, s);
+    $('areaDesfazer').innerHTML = app.desfazerReinicio
+      ? '<p class="desfazer">Simulação reiniciada. <button type="button" class="bt-link" id="btDesfazerReinicio">Desfazer reinício</button></p>' : '';
+    var b = $('btDesfazerReinicio'); if (b) b.onclick = desfazerReinicio;
+  }
+  function resumo(texto, ok) { return '<p class="resumo-final ' + (ok ? 'ok' : 'erro') + '">' + ic(ok ? 'fim' : 'alerta') + texto + '</p>'; }
+  function resumoFinal(e, s) {
+    if (app.nivel === 'contador') {
+      if (!s.terminou) return '';
+      return s.correto ? resumo('Fim: contador = ' + e.contador + ', o valor certo.', true)
+        : resumo('Fim: contador = ' + e.contador + ', mas o certo era ' + s.esperado + '. ' + (s.esperado - e.contador) + ' incremento(s) se perderam.', false);
+    }
+    if (app.nivel === 'pipe') {
+      if (s.travado) return resumo('Travado: todos dormindo e ainda há trabalho (lost wakeup).', false);
+      if (!s.terminou) return '';
+      return s.erros ? resumo('Fim, mas com ' + s.erros + ' erro(s): itens perdidos ou lixo lido.', false)
+                     : resumo('Fim: todos os itens foram lidos, em ordem, sem erro.', true);
+    }
+    if (s.deadlock) return resumo('Deadlock: ninguém pode rodar.', false);
+    return s.terminou ? resumo('Fim: todos comeram, sem deadlock.', true) : '';
+  }
+
+  function desenharLog() {
+    var ol = $('log'), html = '';
+    if (app.hist.length <= 1) html = '<li class="vazio">Nenhum passo ainda. Escolha um processo para começar.</li>';
+    for (var i = 1; i < app.hist.length; i++) {
+      var h = app.hist[i], ruim = h.eventos.some(function (ev) { return ev.tipo !== 'giro'; });
+      html += '<li class="' + (i === app.hist.length - 1 ? 'atual ' : '') + (ruim ? 'ruim' : '') + '"><span class="n">' + i + '</span><span>' + esc(h.frase) + '</span></li>';
+    }
+    ol.innerHTML = html; ol.scrollTop = ol.scrollHeight;
+  }
+
+  /* ---------- linha do tempo em raias (uma por processo) ---------- */
+  function desenharLinhaTempo(anim) {
+    var e = E(), n = app.hist.length - 1;
+    var html = '<caption class="so-leitor">Linha do tempo: em cada passo, qual processo rodou e o que fez.</caption><thead><tr><th scope="col"><span class="so-leitor">Processo</span></th>';
+    for (var s = 1; s <= n; s++) html += '<th scope="col">' + s + '</th>';
+    html += '<th scope="col"><span class="so-leitor">próximo passo</span>' + (n + 1) + '</th></tr></thead><tbody>';
+    e.procs.forEach(function (p, i) {
+      html += '<tr style="' + cores(i) + '"><th scope="row"><span class="pid mini" data-forma="' + (i % 6) + '">' + p.nome + '</span></th>';
+      for (var s = 1; s <= n; s++) {
+        var h = app.hist[s];
+        if (h.pid === i) {
+          var ruim = h.eventos.some(function (ev) { return ev.tipo !== 'giro'; });
+          html += '<td class="' + (h.marca === 'gira' ? 'gira' : 'r') + (ruim ? ' ruim' : '') + (s === n && anim.pid === i ? ' novo' : '') + '"><span>' + esc(h.marca || '•') + '</span></td>';
+        } else html += '<td></td>';
+      }
+      html += '<td class="fut" aria-label="próximo passo">?</td></tr>';
+    });
+    $('linhaTempo').innerHTML = html + '</tbody>';
+    $('ltVazio').hidden = n > 0;
+    var r = $('ltRolagem'); r.scrollLeft = r.scrollWidth;
+  }
+
+  /* ---------- código visível (sem quebrar linha: comentário em coluna própria) ---------- */
+  function linhaCodigo(l) {
+    var i = l.indexOf('//');
+    var cod = i >= 0 ? l.slice(0, i).replace(/\s+$/, '') : l;
+    return '<code class="cod">' + esc(cod) + '</code>' + (i >= 0 ? '<span class="com">' + esc(l.slice(i)) + '</span>' : '<span></span>');
+  }
+  function desenharCodigo() {
+    var e = E();
+    $('codigo').innerHTML = e.procs.map(function (p, i) {
+      var prog = N().programa(e, i);
+      return '<div class="cod-proc" style="' + cores(i) + '"><div class="cod-cab"><span class="pid mini" data-forma="' + (i % 6) + '">' + p.nome + '</span></div><ol aria-label="Pseudocódigo de ' + p.nome + '">' +
+        prog.linhas.map(function (l, j) {
+          var at = j === prog.atual;
+          return '<li' + (at ? ' class="atual" aria-current="step"' : '') + '><span aria-hidden="true">' + (at ? '▶' : '') + '</span>' + linhaCodigo(l) + (at ? '<span class="so-leitor"> (próxima linha)</span>' : '') + '</li>';
+        }).join('') + '</ol></div>';
+    }).join('');
+  }
+
+  /* ---------- processos ---------- */
+  function estadoProc(p) {
+    switch (p.estado) {
+      case 'fim': return ['fim', app.nivel === 'filosofos' ? 'comeu e saiu' : 'terminou'];
+      case 'girando': return ['gira', 'girando: lock ocupado'];
+      case 'dormindo': return ['dorme', 'dormindo em &' + p.canal];
+      case 'esperando': return ['espera', 'esperando G' + p.espera];
+      default:
+        if (p.precisaLock) return ['play', 'acordou: precisa do lock'];
+        if (app.nivel === 'filosofos' && p.pc >= 2) return ['play', 'com os dois garfos'];
+        return ['play', 'pronto'];
+    }
+  }
+  function dadosProc(e, p) {
+    if (app.nivel === 'contador') return [['reg', p.reg === null ? '—' : p.reg], ['incrementos', p.feitos + ' de ' + e.params.incrementos]];
+    if (p.tipo === 'P') return [['escritos', p.feitos + ' de ' + e.params.itens], ['próximo', p.feitos < e.params.itens ? p.letra + (p.feitos + 1) : '—']];
+    return [['lidos', p.feitos + (e.params.versao === 'semChecagem' ? ' de ' + p.alvo : '')], ['último', e.consumidos.length ? e.consumidos[e.consumidos.length - 1] : '—']];
+  }
+  function cabecalho(p, i) {
+    var et = estadoProc(p);
+    return '<div class="token-cab"><span class="pid" data-forma="' + (i % 6) + '">' + p.nome + '</span>' +
+           '<span class="estado e-' + p.estado + '">' + ic(et[0]) + esc(et[1]) + '</span></div>';
+  }
+  function botaoExec(p, i, pode) {
+    return '<button class="exec" type="button" data-executar="' + i + '"' + (pode ? '' : ' disabled') + '>' + ic('play') + '<span>Executar ' + p.nome + '</span>' +
+           (i < 6 ? '<kbd aria-hidden="true">' + (i + 1) + '</kbd>' : '') + '</button>';
+  }
+  function tokenCompleto(e, p, i, pode, anim) {
+    var prog = N().programa(e, i);
+    var proxima = prog.atual >= 0 ? prog.linhas[prog.atual].split('//')[0].trim() : '—';
+    return '<article class="token' + (pode ? '' : ' parado') + (anim.pid === i ? ' rodou' : '') + '" style="' + cores(i) + '" aria-label="Processo ' + p.nome + '">' +
+      cabecalho(p, i) +
+      '<dl class="dados">' + dadosProc(e, p).map(function (d) { return '<div><dt>' + d[0] + '</dt><dd>' + esc(d[1]) + '</dd></div>'; }).join('') + '</dl>' +
+      '<div class="prox"><small>próxima linha</small><code>' + esc(proxima) + '</code></div>' +
+      botaoExec(p, i, pode) + '</article>';
+  }
+  function tokenCompacto(e, p, i, pode, anim) {
+    var mao = [];
+    e.garfos.forEach(function (d, g) { if (d === p.id) mao.push('G' + g); });
+    return '<article class="token compacto' + (pode ? '' : ' parado') + (anim.pid === i ? ' rodou' : '') + '" style="' + cores(i) + '" aria-label="Filósofo ' + p.nome + '">' +
+      cabecalho(p, i) + botaoExec(p, i, pode) +
+      '<span class="so-leitor">Na mão: ' + (mao.length ? mao.join(' e ') : 'nenhum') + '. Pega G' + p.primeiro + ', depois G' + p.segundo + '.</span></article>';
+  }
+
+  /* ---------- palco ---------- */
+  function chipLock(e, anim) {
+    var mudou = anim.antes && anim.antes.lock !== e.lock ? (e.lock === null ? ' abriu' : ' fechou') : '';
+    if (e.lock === null) return '<span class="chip lock livre' + mudou + '">' + ic('lockA') + 'lock livre (0)</span>';
+    return '<span class="chip lock preso' + mudou + '">' + ic('lockF') + 'lock com ' + e.procs[e.lock].nome + ' (1)</span>';
+  }
+  function desenharPalco(anim) {
+    var e = E(), s = N().situacao(e), ex = N().executaveis(e);
+    $('cenaTitulo').textContent = TITULOS[app.nivel][0];
+    $('cenaSub').textContent = TITULOS[app.nivel][1];
+    $('resumoParams').textContent = resumoParams();
+    var coach = e.passos === 0 && !app.desafio
+      ? '<div class="coach">' + ic('play') + '<p><b>Comece por aqui.</b> Clique em “Executar” num processo (ou tecle o número dele). Cada clique roda uma linha; a ordem dos cliques é a intercalação.</p></div>' : '';
+    // no nível 3 o convite fica na coluna da mesa, para não empurrar os botões para baixo da dobra
+    $('coachArea').innerHTML = app.nivel === 'filosofos' ? '' : coach;
+    var cena = $('cena');
+    if (app.nivel === 'filosofos') {
+      cena.className = 'cena lista';
+      cena.innerHTML = '<div class="centro">' + coach + centroFilosofos(e, s) + '</div>' +
+        '<div class="lista-procs"><h3>Filósofos</h3>' + e.procs.map(function (p, i) { return tokenCompacto(e, p, i, ex.indexOf(i) >= 0, anim); }).join('') + '</div>';
+      return;
+    }
+    cena.className = 'cena';
+    var tokens = e.procs.map(function (p, i) { return tokenCompleto(e, p, i, ex.indexOf(i) >= 0, anim); });
+    var meio = Math.ceil(tokens.length / 2);
+    var centro = app.nivel === 'contador' ? centroContador(e, s, anim) : centroPipe(e, anim);
+    cena.innerHTML = '<div class="lado esq">' + tokens.slice(0, meio).join('') + '</div><div class="centro">' + centro + '</div><div class="lado dir">' + tokens.slice(meio).join('') + '</div>';
+  }
+
+  function centroContador(e, s, anim) {
+    var mudou = anim.antes && anim.antes.contador !== e.contador;
+    return '<div class="var"><span class="var-nome">contador</span><span class="valor' + (mudou ? ' mudou' : '') + '">' + e.contador + '</span></div>' +
+      '<div class="chips"><span class="chip">certo ao final: ' + s.esperado + '</span>' +
+      '<span class="chip ' + (e.perdas ? 'ruim' : 'bom') + '">' + ic(e.perdas ? 'alerta' : 'fim') + 'atualizações perdidas: ' + e.perdas + '</span>' +
+      (e.params.lock ? chipLock(e, anim) + '<span class="chip">passos girando: ' + e.giros + '</span>' : '<span class="chip">sem lock nesta versão</span>') + '</div>';
+  }
+
+  function centroPipe(e, anim) {
+    var T = e.params.tamanho, oc = e.nwrite - e.nread, v = e.params.versao;
+    var erros = '';
+    if (v === 'semChecagem') erros = '<span class="chip ' + (e.sobrescritas ? 'ruim' : '') + '">sobrescritas: ' + e.sobrescritas + '</span><span class="chip ' + (e.leiturasVazias ? 'ruim' : '') + '">leituras vazias: ' + e.leiturasVazias + '</span>';
+    if (v === 'ingenua') erros = '<span class="chip ' + (e.wakeupsPerdidos ? 'ruim' : '') + '">wakeups perdidos: ' + e.wakeupsPerdidos + '</span>';
+    return anel(e, anim) +
+      '<div class="ocupacao"><div class="medidor" aria-hidden="true">' + e.data.map(function (_, k) { return '<i class="' + (k < oc ? 'on' : '') + '"></i>'; }).join('') + '</div>' +
+      '<strong>itens no buffer: nwrite − nread = ' + e.nwrite + ' − ' + e.nread + ' = ' + oc + ' de ' + T + '</strong></div>' +
+      '<div class="chips">' +
+      '<span class="chip cond"><b>Cheio? ' + (oc >= T ? 'sim' : 'não') + '</b><code>nwrite ' + e.nwrite + ' == nread ' + e.nread + ' + ' + T + '</code></span>' +
+      '<span class="chip cond"><b>Vazio? ' + (oc <= 0 ? 'sim' : 'não') + '</b><code>nwrite ' + e.nwrite + ' == nread ' + e.nread + '</code></span>' +
+      (v === 'ingenua' ? '<span class="chip">sem lock nesta versão</span>' : chipLock(e, anim)) +
+      '<span class="chip">' + (e.writeopen > 0 ? 'pipe aberto para escrita' : 'pipe fechado (writeopen = 0)') + '</span>' + erros + '</div>' +
+      '<div class="lidos"><span>Lidos, em ordem:</span>' + (e.consumidos.length ? e.consumidos.map(function (x) { return '<span class="item">' + esc(x) + '</span>'; }).join('') : '<em>nada ainda</em>') + '</div>';
+  }
+
+  /* Buffer circular desenhado como anel: um setor por posição, R e W apontando de fora. */
+  function anel(e, anim) {
+    var T = e.params.tamanho, R = 92, C = 2 * Math.PI * R, seg = C / T, gap = T > 1 ? 7 : 0, cx = 280, cy = 160;
+    var s = '<svg class="anel" viewBox="0 0 560 340" role="img" aria-label="' + esc(descreverAnel(e)) + '">';
+    for (var i = 0; i < T; i++) {
+      var ang = -90 + i * 360 / T, ini = ang - 180 / T, ocup = e.data[i] !== null, oc = ocup ? ' ocup' : ' vaz';
+      var novo = (anim.marca === 'esc' && i === (e.nwrite - 1) % T) || (anim.marca === 'lê' && i === (e.nread - 1) % T);
+      s += '<circle class="setor' + oc + (novo ? ' novo' : '') + '" cx="' + cx + '" cy="' + cy + '" r="' + R + '" stroke-dasharray="' + (seg - gap).toFixed(1) + ' ' + (C - seg + gap).toFixed(1) + '" transform="rotate(' + (ini + gap / 2 / C * 360).toFixed(2) + ' ' + cx + ' ' + cy + ')"/>';
+      var rad = ang * Math.PI / 180, tx = cx + R * Math.cos(rad), ty = cy + R * Math.sin(rad);
+      s += '<text class="slot-val' + oc + '" x="' + tx.toFixed(1) + '" y="' + (ty + 4).toFixed(1) + '" text-anchor="middle">' + (ocup ? esc(e.data[i]) : '—') + '</text>';
+      s += '<text class="slot-idx' + oc + '" x="' + tx.toFixed(1) + '" y="' + (ty + 20).toFixed(1) + '" text-anchor="middle">data[' + i + ']</text>';
+    }
+    s += '<text class="anel-centro" x="' + cx + '" y="' + (cy - 4) + '" text-anchor="middle">PIPESIZE ' + T + '</text>';
+    s += '<text class="anel-centro" x="' + cx + '" y="' + (cy + 16) + '" text-anchor="middle">sentido ↻</text>';
+    function ponteiro(idx, cls, txt, lado) {   // lado: -1/+1 quando R e W caem na mesma posição
+      var a = (-90 + idx * 360 / T) * Math.PI / 180, co = Math.cos(a), si = Math.sin(a), x, y;
+      if (Math.abs(co) > 0.45) { x = cx + Math.sign(co) * (R + 31 + 8 + 74); y = cy + si * (R + 10) + lado * 16; }
+      else { x = cx + co * (R + 50) + lado * 78; y = cy + Math.sign(si) * (R + 50); }
+      y = Math.max(16, Math.min(324, y));
+      return '<g class="ptr ' + cls + '"><rect x="' + (x - 74).toFixed(1) + '" y="' + (y - 13).toFixed(1) + '" width="148" height="26" rx="13"/><text x="' + x.toFixed(1) + '" y="' + (y + 5).toFixed(1) + '" text-anchor="middle">' + txt + '</text></g>';
+    }
+    var rI = ((e.nread % T) + T) % T, wI = e.nwrite % T;
+    s += ponteiro(rI, 'r', 'R: próxima leitura', rI === wI ? -1 : 0);
+    s += ponteiro(wI, 'w', 'W: próxima escrita', rI === wI ? 1 : 0);
+    return s + '</svg>';
+  }
+  function descreverAnel(e) {
+    var T = e.params.tamanho;
+    return 'Buffer circular com ' + T + ' posições: ' + e.data.map(function (x, i) { return 'data[' + i + '] ' + (x === null ? 'vazia' : x); }).join(', ') +
+      '. Próxima leitura em data[' + (((e.nread % T) + T) % T) + '], próxima escrita em data[' + (e.nwrite % T) + '].';
+  }
+
+  /* ---------- filósofos: mesa, grafo e Coffman ---------- */
+  function polar(cx, cy, r, graus) { var a = graus * Math.PI / 180; return [cx + r * Math.cos(a), cy + r * Math.sin(a)]; }
+  function f1(x) { return Math.round(x * 10) / 10; }
+  /* Forma do processo i no SVG (a mesma do cartão): círculo, quadrado, triângulo, losango, hexágono, pentágono. */
+  function forma(i, x, y, r, preench, traco, larg) {
+    var k = i % 6, st = 'style="fill:' + preench + ';stroke:' + traco + ';stroke-width:' + larg + ';stroke-linejoin:round"';
+    function pol(n, rot, esc2) {
+      var pts = [];
+      for (var j = 0; j < n; j++) { var a = (rot + j * 360 / n) * Math.PI / 180; pts.push(f1(x + r * esc2 * Math.cos(a)) + ',' + f1(y + r * esc2 * Math.sin(a))); }
+      return '<polygon points="' + pts.join(' ') + '" ' + st + '/>';
+    }
+    if (k === 0) return '<circle cx="' + f1(x) + '" cy="' + f1(y) + '" r="' + r + '" ' + st + '/>';
+    if (k === 1) return '<rect x="' + f1(x - r * .9) + '" y="' + f1(y - r * .9) + '" width="' + f1(r * 1.8) + '" height="' + f1(r * 1.8) + '" ' + st + '/>';
+    if (k === 2) return pol(3, -90, 1.25);
+    if (k === 3) return pol(4, -90, 1.2);
+    if (k === 4) return pol(6, 0, 1.1);
+    return pol(5, -90, 1.15);
+  }
+  function centroFilosofos(e, s) {
+    var c = s.coffman;
+    function item(nome, sim) { return '<li class="' + (sim ? 'sim' : 'nao') + '">' + (sim ? '● presente' : '○ ausente') + ': ' + nome + '</li>'; }
+    return '<div class="duas-figuras">' +
+      '<figure><figcaption>Mesa</figcaption>' + svgMesa(e) + '<p class="legenda">Garfo pintado: está com o filósofo daquela cor. Tracejado vermelho: pedido esperando.</p></figure>' +
+      '<figure><figcaption>Grafo de alocação</figcaption>' + svgGrafo(e, s.ciclo) + '<p class="legenda">Seta cheia: garfo → quem está com ele. Tracejada: filósofo → garfo que espera. Vermelho: ciclo.</p></figure></div>' +
+      '<h3 class="coffman-tit">Condições de Coffman agora (as quatro juntas = deadlock)</h3><ul class="coffman">' +
+      item('exclusão mútua', c.exclusaoMutua) + item('posse e espera', c.posseEEspera) + item('não preempção', c.naoPreempcao) + item('espera circular (ciclo)', c.esperaCircular) + '</ul>';
+  }
+  function svgMesa(e) {
+    var n = e.procs.length, cx = 160, cy = 160, s = '';
+    s += '<svg viewBox="0 0 320 320" role="img" aria-label="Mesa com ' + n + ' filósofos e ' + n + ' garfos">';
+    s += '<circle cx="160" cy="160" r="90" style="fill:#FBF8EE;stroke:#111;stroke-width:4"/>';
+    e.procs.forEach(function (p, i) {
+      var pf = polar(cx, cy, 128, -90 + i * 360 / n);
+      e.garfos.forEach(function (dono, g) {
+        if (dono !== i) return;
+        var pg = polar(cx, cy, 70, -90 + (g - 0.5) * 360 / n);
+        s += '<line x1="' + f1(pf[0]) + '" y1="' + f1(pf[1]) + '" x2="' + f1(pg[0]) + '" y2="' + f1(pg[1]) + '" style="stroke:#111;stroke-width:9"/>';
+        s += '<line x1="' + f1(pf[0]) + '" y1="' + f1(pf[1]) + '" x2="' + f1(pg[0]) + '" y2="' + f1(pg[1]) + '" style="stroke:var(--p' + (i % 6) + ');stroke-width:5"/>';
+      });
+      if (p.estado === 'esperando') {
+        var pe = polar(cx, cy, 70, -90 + (p.espera - 0.5) * 360 / n);
+        s += '<line x1="' + f1(pf[0]) + '" y1="' + f1(pf[1]) + '" x2="' + f1(pe[0]) + '" y2="' + f1(pe[1]) + '" style="stroke:var(--erro);stroke-width:4;stroke-dasharray:7 5"/>';
+      }
+    });
+    e.garfos.forEach(function (dono, g) {
+      var pg = polar(cx, cy, 70, -90 + (g - 0.5) * 360 / n), cheio = dono !== null;
+      s += '<rect x="' + f1(pg[0] - 18) + '" y="' + f1(pg[1] - 13) + '" width="36" height="26" style="fill:' + (cheio ? 'var(--p' + (dono % 6) + ')' : '#fff') + ';stroke:#111;stroke-width:3"/>';
+      s += '<text x="' + f1(pg[0]) + '" y="' + f1(pg[1] + 5) + '" text-anchor="middle" style="font:900 13px var(--din);fill:' + (cheio ? 'var(--p' + (dono % 6) + '-on)' : '#111') + '">G' + g + '</text>';
+    });
+    e.procs.forEach(function (p, i) {
+      var pf = polar(cx, cy, 128, -90 + i * 360 / n), comendo = p.estado !== 'fim' && p.pc >= 2;
+      s += forma(i, pf[0], pf[1], 22, comendo ? 'var(--p' + (i % 6) + ')' : '#fff', '#111', 4);
+      s += '<text x="' + f1(pf[0]) + '" y="' + f1(pf[1] + 5) + '" text-anchor="middle" style="font:900 14px var(--din);fill:' + (comendo ? 'var(--p' + (i % 6) + '-on)' : '#111') + '">' + p.nome + (p.estado === 'fim' ? '✓' : '') + '</text>';
+    });
+    return s + '</svg>';
+  }
+  function svgGrafo(e, ciclo) {
+    var n = e.procs.length, cx = 160, cy = 160, R = 122, pos = {}, ordem = [], s = '', noCiclo = {};
+    // anel F0, G1, F1, G2, ..., F(n-1), G0: cada garfo fica entre os dois filósofos que o disputam
+    for (var i = 0; i < n; i++) { ordem.push('F' + i); ordem.push('G' + ((i + 1) % n)); }
+    ordem.forEach(function (no, k) { pos[no] = polar(cx, cy, R, -90 + k * 360 / ordem.length); });
+    if (ciclo) ciclo.forEach(function (no, k) { noCiclo[no + '>' + ciclo[(k + 1) % ciclo.length]] = true; });
+    s += '<svg viewBox="0 0 320 320" role="img" aria-label="Grafo de alocação: ' + esc(descreverGrafo(e, ciclo)) + '">';
+    s += '<defs><marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:#111"/></marker>' +
+         '<marker id="setaCiclo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" style="fill:var(--erro)"/></marker></defs>';
+    Logica.niveis.filosofos.grafo(e).arestas.forEach(function (a) {
+      var p1 = pos[a.de], p2 = pos[a.para], dx = p2[0] - p1[0], dy = p2[1] - p1[1], L = Math.sqrt(dx * dx + dy * dy), ux = dx / L, uy = dy / L;
+      var emCiclo = noCiclo[a.de + '>' + a.para];
+      s += '<line x1="' + f1(p1[0] + ux * 22) + '" y1="' + f1(p1[1] + uy * 22) + '" x2="' + f1(p2[0] - ux * 24) + '" y2="' + f1(p2[1] - uy * 24) + '" marker-end="url(#' + (emCiclo ? 'setaCiclo' : 'seta') + ')" ' +
+           'style="stroke:' + (emCiclo ? 'var(--erro)' : '#111') + ';stroke-width:' + (emCiclo ? 5 : 2.5) + (a.tipo === 'pedido' ? ';stroke-dasharray:6 4' : '') + '"/>';
+    });
+    ordem.forEach(function (no) {
+      var p = pos[no], idx = parseInt(no.slice(1), 10);
+      if (no[0] === 'F') s += forma(idx, p[0], p[1], 17, 'var(--p' + (idx % 6) + '-suave)', '#111', 3);
+      else s += '<rect x="' + f1(p[0] - 16) + '" y="' + f1(p[1] - 13) + '" width="32" height="26" style="fill:#fff;stroke:#111;stroke-width:3"/>';
+      s += '<text x="' + f1(p[0]) + '" y="' + f1(p[1] + 5) + '" text-anchor="middle" style="font:900 12px var(--din);fill:#111">' + no + '</text>';
+    });
+    return s + '</svg>';
+  }
+  function descreverGrafo(e, ciclo) {
+    var arestas = Logica.niveis.filosofos.grafo(e).arestas;
+    if (!arestas.length) return 'sem arestas';
+    return arestas.map(function (a) { return a.de + (a.tipo === 'posse' ? ' está com ' : ' espera ') + a.para; }).join('; ') + (ciclo ? '. Há ciclo.' : '. Sem ciclo.');
+  }
+
+  /* ---------- formulário de parâmetros ---------- */
+  function desenharFormulario() {
+    var f = $('formParams'), p = app.params[app.nivel], bloqueado = !!app.desafio, html = '';
+    if (bloqueado) html += '<p class="aviso">Parâmetros fixos neste desafio. Para mudar, use “Sair do desafio”.</p>';
+    CAMPOS[app.nivel].forEach(function (c) {
+      var id = 'campo-' + c.nome;
+      if (c.tipo === 'check') {
+        html += '<label class="check" for="' + id + '"><input type="checkbox" id="' + id + '" name="' + c.nome + '"' + (p[c.nome] ? ' checked' : '') + (bloqueado ? ' disabled' : '') + '> ' + c.rotulo + '</label>' +
+                (c.ajuda ? '<span class="ajuda-campo">' + c.ajuda + '</span>' : '');
+      } else {
+        html += '<label for="' + id + '">' + c.rotulo + '<select id="' + id + '" name="' + c.nome + '"' + (bloqueado ? ' disabled' : '') + '>' +
+          c.opcoes.map(function (o) {
+            var val = Array.isArray(o) ? o[0] : o, txt = Array.isArray(o) ? o[1] : o;
+            return '<option value="' + val + '"' + (String(p[c.nome]) === String(val) ? ' selected' : '') + '>' + txt + '</option>';
+          }).join('') + '</select></label>';
+      }
+    });
+    html += '<p class="aviso" id="avisoIngenua" hidden>A versão ingênua usa 1 produtor e 1 consumidor: sem lock, dois produtores estragariam nwrite ao mesmo tempo, e o foco aqui é o lost wakeup.</p>';
+    if (!bloqueado) html += '<button class="bt bt-primario" type="submit">Aplicar e reiniciar</button>';
+    f.innerHTML = html;
+    ajustarIngenua();
+  }
+  function ajustarIngenua() {
+    if (app.nivel !== 'pipe') return;
+    var ing = $('campo-versao').value === 'ingenua';
+    ['produtores', 'consumidores'].forEach(function (k) {
+      var s = $('campo-' + k);
+      if (ing) s.value = '1';
+      s.disabled = ing || !!app.desafio;
+    });
+    $('avisoIngenua').hidden = !ing;
+  }
+  function lerFormulario() {
+    var p = {};
+    CAMPOS[app.nivel].forEach(function (c) {
+      var el = $('campo-' + c.nome);
+      if (c.tipo === 'check') p[c.nome] = el.checked;
+      else p[c.nome] = /^\d+$/.test(el.value) ? parseInt(el.value, 10) : el.value;
+    });
+    if (app.nivel === 'pipe' && p.versao === 'ingenua') { p.produtores = 1; p.consumidores = 1; }
+    return p;
+  }
+
+  function desenharPainelSO() { $('painelSO').innerHTML = PAINEL[app.nivel]; }
+
+  /* =================== EVENTOS =================== */
+  document.querySelectorAll('.niveis [role=tab]').forEach(function (b) {
+    b.addEventListener('click', function () { trocarNivel(b.dataset.nivel); });
+    b.addEventListener('keydown', function (ev) {      // setas entre as abas
+      var i = NIVEIS.indexOf(b.dataset.nivel);
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowLeft') {
+        ev.preventDefault();
+        var j = (i + (ev.key === 'ArrowRight' ? 1 : NIVEIS.length - 1)) % NIVEIS.length;
+        trocarNivel(NIVEIS[j]); $('aba-' + NIVEIS[j]).focus();
+      }
+    });
+  });
+  $('cena').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-executar]'); if (b) executar(parseInt(b.dataset.executar, 10));
+  });
+  $('btProximo').onclick = proximoAleatorio;
+  $('btAuto').onclick = alternarAuto;
+  $('btVoltar').onclick = voltar;
+  $('btReiniciar').onclick = reiniciar;
+  $('velocidade').onchange = function () { app.velocidade = parseFloat(this.value); };
+  $('formParams').addEventListener('submit', function (ev) {
+    ev.preventDefault(); app.params[app.nivel] = lerFormulario(); $('dlgParams').close(); iniciar();
+  });
+  $('formParams').addEventListener('change', function (ev) { if (ev.target.id === 'campo-versao') ajustarIngenua(); });
+  $('btDesafios').onclick = function () { desenharListaDesafios(); abrir('dlgDesafios'); };
+  $('btParams').onclick = function () { desenharFormulario(); abrir('dlgParams'); };
+  $('desLista').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-desafio]'); if (b) iniciarDesafio(b.dataset.desafio);
+  });
+  $('btApagar').onclick = function () {
+    var b = this;
+    if (b.dataset.confirmar !== 'sim') {          // confirmação em dois cliques, dentro da página
+      b.dataset.confirmar = 'sim'; b.textContent = 'Confirmar: apagar todas as estrelas';
+      $('apagarMsg').textContent = 'Clique de novo para confirmar. Isso não pode ser desfeito.';
+      return;
+    }
+    Armazem.apagar(CHAVE_PROG); desenharListaDesafios(); desenharTotalEstrelas();
+    $('apagarMsg').textContent = 'Progresso apagado.';
+  };
+  $('btDica').onclick = function () {
+    app.usouDica = true; $('dDica').hidden = false; this.disabled = true; this.textContent = 'Dica aberta';
+  };
+  $('btSairDesafio').onclick = function () { sairDesafio(); };
+  $('resContinuar').onclick = function () { $('dlgResultado').close(); };
+  $('resLista').onclick = function () { $('dlgResultado').close(); desenharListaDesafios(); abrir('dlgDesafios'); };
+  $('resProximo').onclick = function () {
+    var i = Logica.desafios.indexOf(app.desafio); iniciarDesafio(Logica.desafios[i + 1].id);
+  };
+  $('btGlossario').onclick = function () { abrir('dlgGlossario'); };
+  $('btAjuda').onclick = function () { abrir('dlgAjuda'); };
+  $('btRever').onclick = function () { $('dlgAjuda').close(); mostrarTutorial(0); abrir('dlgTutorial'); };
+  $('btApresentacao').onclick = alternarApresentacao;
+  $('tutPular').onclick = fecharTutorial;
+  $('tutAnterior').onclick = function () { if (tutPos > 0) mostrarTutorial(tutPos - 1); };
+  $('tutProximo').onclick = function () { if (tutPos < TUTORIAL.length - 1) mostrarTutorial(tutPos + 1); else fecharTutorial(); };
+  $('dlgTutorial').addEventListener('cancel', function () { Armazem.gravar(CHAVE_TUT, true); });
+  document.querySelectorAll('[data-fechar]').forEach(function (b) {
+    b.addEventListener('click', function () { b.closest('dialog').close(); });
+  });
+
+  // Atalhos de teclado (ignorados enquanto se digita num campo ou com janela aberta)
+  document.addEventListener('keydown', function (ev) {
+    if (ev.ctrlKey || ev.metaKey || ev.altKey) return;
+    if (algumDialogoAberto()) return;
+    var t = ev.target, tag = t && t.tagName;
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
+    var k = ev.key;
+    if ((k === ' ' || k === 'Enter') && (tag === 'BUTTON' || tag === 'SUMMARY' || tag === 'A')) return; // deixa o botão focado agir
+    if (/^[1-6]$/.test(k)) { executar(parseInt(k, 10) - 1); ev.preventDefault(); return; }
+    switch (k.toLowerCase()) {
+      case ' ': ev.preventDefault(); proximoAleatorio(); break;
+      case 'a': alternarAuto(); break;
+      case 'z': case 'backspace': ev.preventDefault(); voltar(); break;
+      case 'r': reiniciar(); break;
+      case '+': case '=': mudarVelocidade(1); break;
+      case '-': case '_': mudarVelocidade(-1); break;
+      case 'd': desenharListaDesafios(); abrir('dlgDesafios'); break;
+      case 'g': abrir('dlgGlossario'); break;
+      case 'p': alternarApresentacao(); break;
+      case '?': case 'h': abrir('dlgAjuda'); break;
+    }
+  });
+
+  /* =================== INÍCIO =================== */
+  $('gloLista').innerHTML = GLOSSARIO.map(function (g) { return '<dt>' + g[0] + '</dt><dd>' + g[1] + '</dd>'; }).join('');
+  desenharFormulario(); desenharPainelSO(); desenharTotalEstrelas();
+  iniciar();
+  if (!Armazem.ler(CHAVE_TUT, false)) { mostrarTutorial(0); abrir('dlgTutorial'); }
+})();
+</script>
+</body>
+</html>
