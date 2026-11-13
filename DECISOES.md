@@ -17,7 +17,7 @@ quê" da justificativa técnica.
 | D3 | Cenários | 1) contador compartilhado com e sem lock; 2) produtor-consumidor no buffer circular do pipe; 3) jantar dos filósofos com grafo de alocação. Sem editor livre de grafo. Semáforo só como nota. "Ciclo é necessário mas não suficiente com várias instâncias" só no glossário. | Vai do simples ao complexo, e cada nível reaproveita o anterior (o lock reaparece no pipe e nos garfos). O núcleo do xv6 não usa semáforo, então o nível 1 usa lock. |
 | D4 | xv6 e Linux | Nomes reais na tela (`acquire`, `release`, `sleep`, `wakeup`, `nread`, `nwrite`, `PIPESIZE`) e painel "Como o xv6 e o Linux fazem". O futex é descrito como "tenta pegar o lock no espaço de usuário e só dorme no núcleo se houver disputa". | Liga o simulador ao conteúdo das outras partes do trabalho. O texto do futex foi corrigido pelo autor porque "dorme em vez de girar" era incompleto. |
 | D5 | Controle | O usuário é o escalonador: escolhe qual processo roda a cada passo. Desafios valem até 3 estrelas, sem derrota. | Mostra o ponto central: o bug depende da intercalação, e o escalonador é o adversário. |
-| D6 | Tempo | Passo a passo e Auto (escalonador aleatório), velocidade de 0,5× a 4×, Voltar 1 passo e atalhos de teclado. | O passo a passo serve para aprender; o Auto, para a demonstração. Voltar dá liberdade para experimentar. |
+| D6 | Tempo | Passo a passo e Auto (escalonador aleatório), velocidade de 0,5× a ~~4×~~ 2× (ver "Rodada de acabamento"), Voltar 1 passo e atalhos de teclado. | O passo a passo serve para aprender; o Auto, para a demonstração. Voltar dá liberdade para experimentar. |
 | D7 | Entrada do usuário | Nível 1: 2 a 4 processos, 1 a 5 incrementos, lock ligado/desligado. Nível 2: PIPESIZE de 1 a 8, 1 a 2 produtores, 1 a 2 consumidores, itens, versão (correta, sem checagem, ingênua). Nível 3: 3 a 6 filósofos e estratégia (esquerdo, ordem global, um canhoto). | O enunciado sugere que o usuário defina a entrada. Os limites mantêm a tela legível. |
 | D8 | Explicação | Frase curta por passo, tutorial de 3 telas, glossário e "Por que isso aconteceu?" ao fim de cada desafio. | Quem não construiu o simulador precisa conseguir explicá-lo (regra do grupo). |
 | D9 | Visual | ~~Painel técnico, tema claro de alto contraste, metáfora só na mesa dos filósofos.~~ **Substituída em 12/11/2026** pela identidade "Fábrica de Processos" (ver "D9 substituída", abaixo). | O motivo original era o contraste no projetor. A primeira interface foi reprovada por ser "feia, nada intuitiva" e sem identidade. |
@@ -88,3 +88,23 @@ visuais):
 | **Modo apresentação**: fonte 116%, tela cheia, cenário padrão do nível; o código e o histórico saem da tela (o painel xv6/Linux fica, porque o roteiro o usa). | Antes ele só aumentava a fonte e piorava o empilhamento. |
 | Mais duas cores e formas (P4 rosa ⬢, P5 verde-limão ⬟). | O nível 3 vai até 6 filósofos. |
 | `mockups/` e `screenshots/` ficam fora do Git (`.gitignore`). | São material de trabalho, não entregável. |
+
+## Rodada de acabamento (13/11/2026)
+
+| Decisão | Por quê |
+|---|---|
+| Auto limitado a **2×** (0,5×, 1× e 2×), com rastro dos 2 passos anteriores e o último passo destacado na linha do tempo. | A 4× (300 ms por passo) nada ficava legível, nem com rastro. O autor autorizou esse limite caso não houvesse solução legível. |
+| **Confirmação** antes de perder uma simulação em andamento: ao trocar de nível, em "Aplicar e reiniciar" e ao começar um desafio. O foco começa em "Cancelar". Sem simulação em andamento, não há pergunta. | Prevenção de erro (Nielsen 5). O "Apresentar" deixou de recarregar o cenário quando há simulação em andamento, para nunca descartar trabalho sem perguntar. |
+| Botão **"?"** ao lado dos controles, com o que cada um faz e a tecla. | O `title` não aparece no toque nem só com teclado. |
+| Link fixo **"↓ Linha do tempo e código"**, visível só enquanto essa parte está abaixo da tela. | No notebook, a página continua longa, e o link avisa que há conteúdo abaixo. O código não foi recolhido, para não esconder nada no modo normal. |
+
+## Easter egg: fork bomb (decisão do autor; detalhes da IA)
+
+| Parte | Decisão | Por quê |
+|---|---|---|
+| Gatilhos | Digitar `:(){ :|:& };:` (com ou sem espaços) em qualquer lugar, ou tocar 5 vezes em 2 s no nome "Simulador" no topo. Não aparecem na interface, só no `README.md`. | O fork bomb clássico do bash, e um gatilho que funciona no celular. Os espaços da sequência não disparam "passo aleatório". |
+| Efeito | "Crash" simulado no estilo da Fábrica: cartões de processo dobrando (1, 2, 4… 64), faixa de risco piscando, contador "processos: N", tremor curto e a linha `kernel$ fork: retry: Resource temporarily unavailable` com cursor ▌. | É a mensagem real do bash quando `fork()` falha por falta de recurso, e mostra o crescimento exponencial. |
+| Limites | Só visual: script próprio (`<script id="easter-egg">`), sem Worker, sem janela, sem laço sem fim; no máximo 64 cartões e cerca de 4 s; timers cancelados e diálogo removido do DOM ao fechar. Se o Auto estiver rodando, é pausado e retomado. | Exigência do autor. O teto de 64 é o `NPROC` do xv6. |
+| Saída | Esc, um clique ou "Reiniciar o sistema" fecham, e a tela volta exatamente ao que era. | Testado 3 vezes seguidas: o palco ficou igual, o número de elementos do DOM também, e não houve erro. |
+| Cartão didático | Diz que o "crash" é piada. Explica o fork bomb; que no xv6 o sistema **não** cai (`NPROC = 64` em `kernel/param.h`; com a tabela `proc[NPROC]` cheia, `allocproc()` devolve 0 e `fork()` devolve −1, em `kernel/proc.c`); e que no Linux `ulimit -u`/`RLIMIT_NPROC` e o controlador `pids` do cgroup fazem `fork()` falhar com `EAGAIN`. Sem a palavra "panic". | Conferido no xv6-riscv, branch `riscv`, commit `fa2ddcb` (no código atual a função do núcleo se chama `kfork()`). |
+| Acessibilidade | Diálogo modal (`showModal`), com foco preso nele e Esc para sair. Com `prefers-reduced-motion`, mostra direto a tela final e o cartão, sem animação. Contraste do texto: 12:1 ou mais. | Mesmas regras do resto do simulador. |

@@ -25,8 +25,10 @@ hierarquia e facilidade de uso.
   calculadas com os números ("nwrite 2 == nread 0 + 2"). No nível 3, as condições de Coffman
   ficam visíveis.
 
-**Não tão bem atendida:** no Auto a 4×, os passos mudam mais rápido do que dá para ler. Pausar,
-Voltar e o histórico compensam.
+**Resolvido nesta rodada:** o Auto vai até 2× (600 ms por passo). A 4× (300 ms) nada ficava
+legível, então essa velocidade saiu. Durante o Auto e depois de pausar, um **rastro** mostra os 2
+passos anteriores acima da frase atual. O último passo fica destacado na linha do tempo e no
+histórico.
 
 ## 2. Correspondência entre o sistema e o mundo real
 
@@ -52,8 +54,10 @@ próxima leitura").
 - Sair do desafio e pular o tutorial.
 - `Esc` fecha qualquer janela, inclusive a gaveta de parâmetros.
 
-**Não tão bem atendida:** trocar de nível e "Aplicar e reiniciar" descartam a simulação atual sem
-oferecer "Desfazer reinício".
+**Resolvido nesta rodada:** trocar de nível, "Aplicar e reiniciar" e começar um desafio com uma
+simulação em andamento abrem uma confirmação: "Você vai perder a simulação atual (passo N).
+Continuar?". O foco começa em "Cancelar", e Esc também cancela. Sem simulação em andamento, não há
+pergunta. "Reiniciar" continua sem pergunta, porque tem "Desfazer reinício".
 
 ## 4. Consistência e padrões
 
@@ -91,7 +95,7 @@ oferecer "Desfazer reinício".
 
 **Aplicada em:**
 - **Atalhos**: `1`–`6`, `Espaço`, `A`, `Z`, `R`, `+`/`−`, `D`, `G`, `P`, `?`.
-- **Três ritmos**: escolher cada processo, "Passo aleatório" ou Auto com velocidade de 0,5× a 4×.
+- **Três ritmos**: escolher cada processo, "Passo aleatório" ou Auto com velocidade de 0,5× a 2×.
 - **Modo "Apresentar"**: fonte maior, tela cheia, cenário padrão, e o código e o histórico saem da
   tela.
 - **Desafios opcionais** e parâmetros para explorar.
@@ -106,8 +110,9 @@ oferecer "Desfazer reinício".
 - **Cor só com função**: processo, erro e lock. As listras marcam "girando", e a faixa de risco
   marca o lock ocupado.
 
-**Não tão bem atendida:** a página é longa. A linha do tempo e o código ficam abaixo da dobra num
-notebook. No nível 3, os botões ficam acima da dobra de propósito.
+**Resolvido nesta rodada:** a página continua longa, mas, enquanto a linha do tempo e o código
+estão abaixo da tela, um link fixo **"↓ Linha do tempo e código"** avisa que eles existem e leva
+até lá. Nada fica escondido no modo normal.
 
 ## 9. Ajudar a reconhecer, diagnosticar e recuperar erros
 
@@ -129,8 +134,18 @@ notebook. No nível 3, os botões ficam acima da dobra de propósito.
 - Painel xv6/Linux em cada nível e dicas nos desafios.
 - `README.md` com simplificações e com o que o simulador não cobre.
 
-**Não tão bem atendida:** as dicas de botão (`title`) não aparecem no toque. Os atalhos estão
-também na Ajuda.
+**Resolvido nesta rodada:** o que estava só no `title` (o que cada controle faz e a tecla de
+atalho) agora também está num botão **"?"** ao lado dos controles. Ele abre ao toque e pelo
+teclado.
+
+## O que continua fraco
+
+- **"R" e "W"** continuam abreviações (heurística 2). O rótulo do próprio ponteiro explica cada
+  uma.
+- **Nos cartões compactos do nível 3**, o número da tecla de atalho não aparece no botão. Foi
+  omitido para os 6 botões caberem acima da dobra; o atalho está na Ajuda e no "?".
+- **O link fixo** cobre uma faixa estreita do conteúdo na parte de baixo da tela. Ele some quando
+  a linha do tempo aparece.
 
 ## O que não foi testado
 

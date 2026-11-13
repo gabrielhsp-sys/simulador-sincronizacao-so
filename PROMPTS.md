@@ -308,11 +308,17 @@ Dois cuidados nos documentos:
 | Testes (Fase 3) | A primeira busca exaustiva não terminava: contar os passos gastos girando criava estados "novos" sem fim. | Os testes passaram a ignorar essa estatística ao comparar estados. A lógica não mudou. |
 | Revisão de UI | A ação principal ("Executar") estava com estilo secundário; havia heading sem seção, abas sem painel e anúncios demais no modo Auto. | As quatro correções foram aprovadas e aplicadas (prompt 4). |
 
-## Rodada de interface (prompts 5 a 8)
 
-A primeira interface foi reprovada pelo autor. Os prompts abaixo conduziram o redesenho, a
-escolha da identidade visual e a publicação. A única troca foi o nome do portfólio do autor e o
-login do GitHub, substituídos por marcadores.
+## Rodada de interface e acabamento (prompts 5 a 9)
+
+A primeira interface foi reprovada pelo autor. Os prompts abaixo conduziram:
+- o redesenho;
+- a escolha da identidade visual;
+- a publicação;
+- o acabamento final.
+
+Estão inteiros. As únicas trocas foram de privacidade: o nome do portfólio do autor e o login do
+GitHub viraram marcadores. Os prompts não citam nomes de colegas nem e-mails.
 
 <details>
 <summary>Prompt 5 — redesenhar a interface (três direções de layout)</summary>
@@ -324,6 +330,17 @@ login do GitHub, substituídos por marcadores.
 A interface atual do index.html foi reprovada pelo autor: "feia, nada intuitiva". O objetivo é uma
 interface que um colega que nunca viu o simulador entenda e use em 10 segundos, e que fique boa
 no projetor. A lógica, os testes e o escopo funcional já aprovados NÃO mudam.
+
+## Projeto
+Simulador de Sincronização, Comunicação e Deadlock — ~/Dev/projects/academic/jogo-sincronizacao-so
+(index.html único, JS puro, zero rede, tests/logica.test.js, commits locais, sem remoto).
+
+## Estado atual
+CONFIRMADO: lógica com 18/18 testes; 3 níveis; desafios; tutorial; glossário; painel xv6/Linux;
+modo apresentação; direção anterior = painel técnico, tema claro, metáfora só na mesa dos filósofos.
+CONFIRMADO: a auditoria anterior (kc1t-ui-audit) mediu contraste, semântica e clichês; NÃO avaliou
+hierarquia visual nem facilidade de uso. O autor reprovou o resultado mesmo assim.
+PENDENTE (do autor): a nova direção visual. Você NÃO a escolhe.
 
 ## Problemas observados nas capturas do autor (níveis 1 e 2, tela de ~1650 px)
 1. Três faixas de controles empilhadas antes do conteúdo (título+abas; Desafios/Glossário/Ajuda/
@@ -341,13 +358,70 @@ no projetor. A lógica, os testes e o escopo funcional já aprovados NÃO mudam.
 9. Nível 3, diálogos (Desafios, Glossário, Ajuda) e modo apresentação: não aparecem nas capturas.
    Avalie você.
 
-## Tarefas (resumo das fases)
-Fase A: referências (kc1t-reference-research), 3 mockups em mockups/ que diferem em layout e
-hierarquia, recomendação de UMA, e PARAR. Fase B: aplicar a direção escolhida. Fase C: testes,
-capturas em 4 larguras, kc1t-ui-audit, NIELSEN.md e DECISOES.md, commit.
-```
+## Restrições
+- NÃO altere <script id="logica"> nem tests/. Se achar imprescindível, PARE e pergunte. Os 18
+  testes devem continuar passando.
+- Mantenha o escopo funcional aprovado e os textos: a interface diz "simulador" e "usuário", nunca
+  "jogo" ou "jogador".
+- Um único index.html, JS e CSS puros, zero rede (sem CDN, fontes externas ou imagens remotas),
+  sem som. Teclado, contraste AA, estado com ícone+texto e prefers-reduced-motion continuam valendo.
+- Git: commit local; sem remoto, sem push. O prompt.md fica fora do git. mockups/ e screenshots/
+  ficam fora do commit (.gitignore).
+- Não instale nada. Para capturas, use o Edge headless como antes, com perfil temporário que você
+  apaga no fim.
+- Nenhum dado pessoal nos arquivos.
 
-(Trecho literal do pedido; as seções de restrições e "pare e pergunte" repetiam as regras do prompt 1.)
+## Ferramentas e skills
+- kc1t-reference-research — Fase A: 3 referências reais de visualizadores/simuladores educativos;
+  para cada, o princípio a extrair, o que não trazer e a checagem de licença. Não clone layout.
+- frontend-design (plugin frontend-design@claude-plugins-official) — Fases A e B: cria as
+  direções e a interface final.
+- kc1t-ui-audit — Fase C: desta vez com julgamento de hierarquia e facilidade de uso, além do
+  contraste e da semântica.
+
+## Modo
+- A Fase A é bloqueante: pare no fim e espere a escolha do autor.
+- Depois da escolha, faça as Fases B e C de uma vez, parando só em "Pare e pergunte".
+
+## Tarefas
+Fase A — direções (PARE no fim)
+1. Abra o index.html atual e confira você mesma os problemas 1–9, incluindo o nível 3 e os diálogos.
+2. Faça pesquisa de referências (kc1t-reference-research) e registre-a em mockups/REFERENCIAS.md.
+3. Crie 3 mockups estáticos em mockups/ (direcao-a.html, direcao-b.html, direcao-c.html), sem tocar
+   no index.html. Cada um mostra o nível 1 e o nível 2 com dados de uma partida em andamento (não
+   o estado vazio). As direções devem diferir de verdade em layout e hierarquia, não só em cor, e
+   cada uma resolve os problemas 1–8.
+   Ideias a considerar, como PROPOSTA e sem nada decidido: uma única barra superior; a
+   visualização grande como centro da tela; os botões de executar junto da visualização; parâmetros
+   recolhidos numa gaveta; um "Comece por aqui" no primeiro uso; borda fina e fundos suaves no lugar
+   de borda preta em tudo.
+4. Para cada direção, escreva em 3 linhas: o que muda, por que ajuda, qual o risco. Recomende UMA.
+5. Mostre ao autor o caminho de cada arquivo no formato \\wsl.localhost\Ubuntu\... e PARE.
+   Se ele pedir ajustes ou outras direções, faça nova rodada.
+
+Fase B — aplicação
+6. Aplique a direção escolhida ao index.html: 3 níveis, diálogos, modo apresentação e estados vazios.
+7. Critérios de pronto, todos verificáveis:
+   - sem rolagem horizontal em 1280, 1366, 1920 e ≤480 px de largura;
+   - nenhum comentário de código quebrado no meio da linha;
+   - linha do tempo com estado vazio útil;
+   - em cada nível, UMA ação principal visualmente óbvia;
+   - teste dos 10 segundos: descreva, por escrito, o que um usuário novo vê em cada nível e o que
+     ele faz primeiro.
+
+Fase C — verificação
+8. node --test → 18/18. Abra por file:// sem erro de JavaScript, nos mesmos cenários da rodada
+   anterior mais o nível 3. Capturas nas 4 larguras em screenshots/.
+9. Rode kc1t-ui-audit com julgamento de hierarquia e facilidade de uso. Atualize NIELSEN.md e
+   DECISOES.md (nova decisão: a direção visual escolhida e por quê). Faça commit local.
+10. Relatório curto: o que mudou, o resultado de cada critério, o que ficou fraco e o que o autor
+    precisa conferir à mão (Chrome, Firefox, celular).
+
+## Pare e pergunte
+- Qualquer mudança que exija tocar na lógica ou nos testes.
+- Qualquer decisão visual além da direção que o autor escolheu.
+- Algo que exija instalar, usar rede ou publicar.
+```
 
 </details>
 
@@ -364,23 +438,101 @@ chamativa e memorável: paleta própria, tipografia com caráter, texturas, efei
 micro-animações que tornam o simulador inconfundível. Tudo isso continua legível no projetor e
 continua ensinando corretamente. A lógica, os testes e o escopo funcional NÃO mudam.
 
+## Projeto
+~/Dev/projects/academic/jogo-sincronizacao-so — index.html único, JS puro, tests/logica.test.js
+(18/18), commits locais, sem remoto.
+
+## Estado atual
+CONFIRMADO: o autor rejeitou as 3 direções (A Palco, B Raias, C Código e memória) pelo VISUAL.
+Ele não comentou o layout.
+HISTÓRICO: D9 "painel técnico, tema claro de alto contraste" foi SUBSTITUÍDA por este pedido. Não
+siga mais "tema claro" nem "visual técnico neutro". Registre a substituição em DECISOES.md quando
+aplicar.
+PENDENTE (autor): qual identidade. Você NÃO escolhe.
+
 ## Respostas do autor (CONFIRMADO)
 - Ponto de partida: 3 identidades NOVAS e radicalmente diferentes entre si. Não use o
   [portfólio do autor] nem leia o repositório dele.
 - Vibe: nenhuma definida; proponha você. O autor quer algo chamativo, com estilo e personalidade,
   no clima de site "vibe coded" feito com as skills de design dele.
+- Proibido: nada além do que está em "O que continua valendo".
 
 ## O que continua valendo
-- Não altere <script id="logica"> nem tests/.
+- Não altere <script id="logica"> nem tests/. Se for imprescindível, PARE e pergunte.
 - A interface diz "simulador" e "usuário", nunca "jogo" ou "jogador".
 - Um index.html, zero requisição de rede, sem som.
-- Fonte com caráter sem rede: pilhas de fontes do sistema, ou uma fonte OFL embutida em base64,
-  só se o arquivo já existir na máquina e a licença for conferida no próprio arquivo.
-- Contraste AA para texto; estado sempre com ícone e texto; teclado; prefers-reduced-motion
-  desliga as animações.
-```
+- Fonte com caráter sem rede: (a) pilhas de fontes do sistema bem escolhidas, ou (b) uma fonte de
+  licença aberta (OFL) embutida em base64, só se o arquivo já existir na máquina e a licença for
+  conferida no próprio arquivo. Não baixe nada. Se a (b) não for possível, diga e use a (a).
+- Contraste AA para texto, inclusive em tema escuro ou neon; estado sempre com ícone e texto,
+  nunca só cor; teclado; prefers-reduced-motion desliga as animações.
+- Git: commit local, sem push. mockups/ e screenshots/ ficam fora do commit.
+- Não instale nada.
 
-(Trecho literal; o restante listava as fases e as ferramentas.)
+## Ferramentas e skills
+- ui-ux-pro-max (plugin ui-ux-pro-max@ui-ux-pro-max-skill) — Fase A: use os dados locais
+  (search.py --design-system) para propor estilo, paleta e tipografia. Conferir antes:
+  python3 --version. Não instale dependências; se faltar algo, siga sem a skill e avise.
+- frontend-design (plugin frontend-design@claude-plugins-official) — Fases A e B: o objetivo
+  explícito é fugir da estética genérica de IA.
+- kc1t-ui-audit — Fase C: inclui o catálogo de "padrões genéricos de IA". Nenhuma direção pode cair
+  neles (cinza-azulado neutro, cartões brancos com borda fina, pills cinza, botões padrão).
+
+## Modo
+- A Fase A é bloqueante: pare no fim.
+- Depois da escolha do autor, faça as Fases B e C de uma vez.
+
+## Tarefas
+Fase A — 3 identidades (PARE no fim)
+1. Base de layout (PROPOSTA, pode adaptar se a identidade pedir): o palco da direção A, com a linha
+   do tempo em raias da B e o código visível. O que muda entre as direções é a IDENTIDADE, não a
+   estrutura.
+2. Crie mockups/identidade-1.html, -2.html e -3.html, cada um com o nível 1 (passo 3) e o nível 2
+   (buffer de 4 posições, passo 28), totalmente estilizados e com animações funcionando (clicar em
+   "Executar" anima). Não faça arquivo estático cinza.
+3. As 3 identidades devem ser radicalmente diferentes entre si. Exemplos de território, só para
+   inspirar (PROPOSTA, nenhum decidido; proponha os seus se forem melhores):
+   - terminal/kernel retrô: fósforo, scanlines, monoespaçada, cursor piscando, painel de kernel;
+   - neon/sintético: fundo escuro, cores elétricas por processo, glow no lock, pulso vermelho no
+     deadlock;
+   - "fábrica de processos" gráfica: cores chapadas fortes, formas geométricas grandes, sombras
+     duras (neo-brutalismo), tipografia pesada.
+4. Cada direção tem uma ficha curta:
+   - nome;
+   - paleta (hex);
+   - tipografia;
+   - 3 elementos de assinatura (ex.: como o lock aparece, como o deadlock "explode", como o
+     processo girando se mostra);
+   - risco no projetor (tema escuro lava? neon some?);
+   - contraste do pior caso.
+5. Recomende UMA, mostre os caminhos \\wsl.localhost\Ubuntu\... e PARE. Se o autor quiser misturar
+   ou pedir outra rodada, faça.
+
+Fase B — aplicação
+6. Aplique a identidade escolhida ao index.html inteiro: 3 níveis, diálogos, tutorial, desafios,
+   modo apresentação e estados vazios. Corrija também os 4 achados da rodada anterior:
+   - botões do nível 3 abaixo da dobra;
+   - "✓ presente" em vermelho nas condições de Coffman;
+   - layout desigual no diálogo Desafios;
+   - modo apresentação que só aumenta a fonte.
+7. Critérios de pronto:
+   - sem rolagem horizontal em 1280, 1366, 1920 e ≤480 px;
+   - botões de executar do nível 3 acima da dobra em 1366×768;
+   - nenhuma linha de código quebrada;
+   - AA no texto;
+   - animações desligadas com reduced-motion.
+
+Fase C — verificação
+8. node --test → 18/18. Abra por file:// sem erro de JavaScript nos 3 níveis. Capturas nas 4
+   larguras em screenshots/.
+9. kc1t-ui-audit, sem nenhum padrão genérico de IA restante. Atualize NIELSEN.md e DECISOES.md (D9
+   substituída pela identidade escolhida). Faça commit local.
+10. Relatório curto: capturas, critérios, o que ficou fraco e o que o autor confere à mão.
+
+## Pare e pergunte
+- Tocar na lógica ou nos testes; usar rede; instalar algo.
+- Qualquer decisão visual além da identidade escolhida.
+```
 
 </details>
 
@@ -397,8 +549,19 @@ Fusão escolhida, UM visual só:
   instante.
 - Nada mais das outras duas. Fontes do sistema.
 
-ANTES de aplicar no index.html, faça uma única demonstração: mockups/fusao.html (...)
-e PARE. Não toque no index.html nem faça commit até eu dizer "pode aplicar".
+ANTES de aplicar no index.html, faça uma única demonstração:
+1. Crie mockups/fusao.html, no mesmo formato dos mockups de identidade (lógica real, Executar
+   funcionando, Reiniciar mostra o primeiro uso), com:
+   - o nível 1 (passo 3);
+   - o nível 2 (buffer de 4 posições, passo 28);
+   - um cenário pronto que provoca o erro ou o deadlock, para eu ver o carimbo + kernel panic.
+     Por exemplo, um botão "Ver erro" que leva o nível 1 sem lock até a atualização perdida.
+2. Confira AA, reduced-motion e ausência de erro de JavaScript por file://.
+3. Mostre o caminho \\wsl.localhost\Ubuntu\... e PARE. Não toque no index.html nem faça commit até
+   eu dizer "pode aplicar".
+
+Depois do meu "pode aplicar": registre em DECISOES.md que a D9 foi substituída pela fusão, por
+escolha do grupo, e siga as Fases B e C de uma vez.
 ```
 
 </details>
@@ -410,19 +573,160 @@ e PARE. Não toque no index.html nem faça commit até eu dizer "pode aplicar".
 Pode aplicar a fusão. Termine TUDO e publique. O autor autoriza explicitamente criar o repositório
 público no GitHub, fazer push e ligar o GitHub Pages SÓ deste projeto.
 
+## 1. Aplicar e verificar (Fases B e C)
+- Aplique mockups/fusao.html ao index.html inteiro: 3 níveis, diálogos, tutorial, desafios, modo
+  apresentação, estados vazios. Corrija os 4 achados antigos:
+  - botões do nível 3 abaixo da dobra;
+  - "✓ presente" em vermelho nas condições de Coffman;
+  - layout desigual no diálogo Desafios;
+  - modo apresentação que só aumenta a fonte.
 - Correção conceitual do kernel panic: uma atualização perdida ou um lost wakeup em processos NÃO
   derruba o kernel. Mantenha o visual (prompt kernel$, cursor ▌, tremor), mas o texto não pode
   dizer "panic" nesses casos: use por exemplo "kernel$ alerta: atualização perdida". "panic" só
   onde o xv6 de fato chamaria panic(). Se nenhum caso do simulador for assim, não use a palavra.
-- Critérios: sem rolagem horizontal em 1280, 1366, 1920 e ≤480 px; executar do nível 3 acima da
-  dobra em 1366×768; nenhuma linha de código quebrada; AA no texto; reduced-motion desliga as
-  animações.
-- Publicar: gh auth status; dono esperado [login do autor]; repositório simulador-sincronizacao-so;
-  histórico publicado só com e-mail noreply do GitHub; prompt.md, mockups/ e screenshots/ fora do
-  commit; Pages em main / (root); testar o endereço final.
+- Critérios:
+  - sem rolagem horizontal em 1280, 1366, 1920 e ≤480 px;
+  - executar do nível 3 acima da dobra em 1366×768;
+  - nenhuma linha de código quebrada;
+  - AA no texto;
+  - reduced-motion desliga as animações.
+- node --test → 18/18 (não altere a lógica nem os testes). Abra por file:// sem erro de
+  JavaScript nos 3 níveis. kc1t-ui-audit.
+- Atualize NIELSEN.md, DECISOES.md (D9 substituída pela fusão, escolha do grupo), README.md e
+  VERIFICACAO.md. Faça commit local.
+
+## 2. Publicar (Fase D)
+Leitura antes de qualquer escrita:
+- gh auth status. Se não houver login, PARE e diga ao autor para rodar gh auth login. Você não
+  autentica.
+- gh api user --jq .login → dono (esperado: [login do autor]; se for outro, PARE).
+- gh repo view <dono>/simulador-sincronizacao-so. Se já existir, PARE.
+- gh api repos/<dono>/<dono>.github.io/pages, só leitura, para descobrir se o portfólio usa
+  domínio próprio e qual será o endereço final. NÃO altere esse repositório.
+
+Privacidade, antes do push:
+- git log --format='%an <%ae>' | sort -u. Se aparecer um e-mail que não seja o noreply do GitHub
+  (<id>+<login>@users.noreply.github.com, com o id vindo de gh api user --jq .id), NÃO publique
+  esse histórico. Faça assim:
+  - preserve o histórico atual numa branch local historico-local;
+  - crie a branch main a partir de uma branch órfã com UM commit do estado final, autorado pelo
+    noreply via git -c user.name=... -c user.email=... commit;
+  - não altere o git config.
+- Confira que prompt.md, mockups/ e screenshots/ NÃO estão no commit publicado. Faça grep por
+  e-mails e nomes de colegas nos arquivos versionados; se achar algo, remova antes.
+
+Publicação:
+- gh repo create <dono>/simulador-sincronizacao-so --public --source=. --remote=origin, depois
+  git push -u origin main. Sem --force, sem rebase, sem tocar em nenhum outro repositório.
+- Ligue o Pages: gh api -X POST repos/<dono>/simulador-sincronizacao-so/pages
+  -f "source[branch]=main" -f "source[path]=/".
+- Aguarde o build (gh api .../pages/builds/latest) e teste o endereço final com curl -sI
+  (precisa dar 200) e abrindo no Edge headless sem erro de JavaScript.
+- Escreva o link real no README.md e no PUBLICAR.md (que vira o registro do que foi feito). Faça
+  commit e push (sem --force).
+
+## 3. Entrega final
+Relatório curto com:
+- link do simulador e link do repositório;
+- 18/18, critérios e auditoria;
+- o que ainda é manual: Padlet, gravar o vídeo, testar no celular/Chrome/Firefox, mandar link e
+  arquivos às Pessoas 2 e 3, conferência dos casos no papel pelo grupo.
+Não crie Padlet, não grave nada, não mexa em nenhum outro repositório.
+
+## Pare e pergunte
+- gh sem login; dono diferente; repositório já existente.
+- Segredo, e-mail pessoal ou nome de colega que não dê para remover sem decisão.
+- Qualquer falha no Pages que exija mudar configuração da conta.
 ```
 
-(Trecho literal resumido nas partes de procedimento.)
+</details>
+
+<details>
+<summary>Prompt 9 — acabamento final, easter egg e nova publicação</summary>
+
+```markdown
+Rodada final de acabamento. O autor autoriza commit e push na main de
+[login do autor]/simulador-sincronizacao-so (sem --force, sem rebase, sem reescrever histórico,
+nenhum outro repositório). Não altere <script id="logica"> nem tests/: 18/18 continua obrigatório.
+
+## 1. PROMPTS.md completo
+- Coloque os prompts 5 e 8 por inteiro, sem resumo, como os demais.
+- Sanitize TODOS os prompts antes do commit:
+  - troque o nome do autor por "o autor" e nomes de colegas por "Pessoa N";
+  - troque caminhos que contenham o nome de usuário (/home/<usuario>, \\wsl.localhost\...\<usuario>)
+    por ~/...;
+  - nenhum e-mail.
+  Confira com grep nos arquivos versionados antes do commit.
+
+## 2. Corrigir os pontos fracos registrados no NIELSEN.md
+- Auto rápido: a 2× e a 4×, mantenha o passo atual destacado e o log legível. Por exemplo,
+  a frase do passo fica visível até o próximo passo, e o último passo fica destacado ao pausar.
+  Se não houver solução legível, limite a velocidade máxima a 2×.
+- Troca de nível ou "Aplicar e reiniciar" com simulação em andamento: peça confirmação ("Você vai
+  perder a simulação atual (passo N). Continuar?"), operável pelo teclado. Sem simulação em
+  andamento, não pergunte.
+- Dicas no toque: toda informação que hoje só existe em title/hover também fica acessível sem
+  mouse, num texto visível ou num "?" que abre ao toque.
+- Página longa: no notebook (1366×768), o usuário precisa ver que existe linha do tempo e código
+  abaixo. Por exemplo, um link fixo "↓ Linha do tempo e código" ou o código recolhível
+  começando fechado no notebook. Não esconda nada no modo normal sem indicação.
+
+## 3. Easter egg: fork bomb (decidido pelo autor; os detalhes são seus)
+- Gatilho escondido. Sugestão: digitar :(){ :|:& };: em qualquer lugar da página, mais um
+  segundo gatilho que funcione no celular (por exemplo, tocar 5 vezes no logo "FÁBRICA DE
+  PROCESSOS"). Não mostre o gatilho na interface; registre-o só no README.md, na seção
+  "Easter egg".
+- Efeito: um CRASH SIMULADO no estilo Fábrica de Processos.
+  - Cartões de processo se multiplicam pela tela (1, 2, 4, 8, … dobrando), a faixa de risco
+    pisca e um contador "processos: N" sobe.
+  - No fim, a tela "trava" e aparece o kernel$ com cursor ▌ e uma mensagem de crash de humor.
+- O efeito é só VISUAL, e isto é obrigatório:
+  - nada de Worker, nada de loop sem fim, nada de abrir janela ou aba;
+  - no máximo ~64 elementos animados na tela, com duração total de ~4 s;
+  - nenhum crescimento ilimitado de memória ou do DOM;
+  - não toca em <script id="logica">: fica num script separado e não altera o estado da
+    simulação em andamento.
+- Saída: Esc, um clique ou um botão "Reiniciar o sistema" fecham o easter egg e devolvem a tela
+  exatamente como estava.
+- Parte didática, depois do "crash": um cartão curto e correto explicando que um fork bomb cria
+  processos sem parar até esgotar a tabela de processos.
+  - No xv6 o sistema NÃO cai: quando a tabela (proc[NPROC]) enche, allocproc falha e fork()
+    devolve -1. Confira o valor de NPROC e esse comportamento no código do xv6-riscv
+    (kernel/param.h e kernel/proc.c). Se não conseguir conferir, escreva o texto sem citar o
+    número.
+  - No Linux, o limite de processos por usuário (ulimit -u / RLIMIT_NPROC) e o controlador pids
+    do cgroup seguram o estrago.
+  - Nada de "kernel panic" neste texto: o "crash" é piada, e o cartão diz isso.
+- Acessibilidade: com reduced-motion, sem tremor nem multiplicação animada; mostra direto a tela
+  final e o cartão. Foco preso no diálogo enquanto ele está aberto. Contraste AA.
+
+## 4. Critérios gerais (valem para tudo acima)
+- Identidade "Fábrica de Processos" mantida.
+- Sem rolagem horizontal em 1280, 1366, 1920 e ~480 px.
+- Executar do nível 3 acima da dobra em 1366×768.
+- AA no texto; reduced-motion desligando as animações; nenhum erro de JavaScript, inclusive
+  disparando o easter egg 3 vezes seguidas.
+
+## 5. Verificar e publicar
+- node --test → 18/18. Capturas nas 4 larguras, incluindo o easter egg aberto, sem erro de
+  JavaScript.
+- Atualize NIELSEN.md (os pontos fracos resolvidos saem da lista; o que não resolveu fica, com
+  motivo), DECISOES.md (inclua o easter egg) e README.md.
+- Commit e push na main. Espere o build do Pages e confirme o endereço com curl -sI (200) e
+  abrindo no Edge sem erro no console.
+
+## 6. Relatório final
+- O que mudou, o resultado de cada critério e como disparar o easter egg.
+- Lista "pronto para entregar": link do simulador, link do repositório e os arquivos que vão para
+  a Pessoa 2 (roteiro) e para a Pessoa 3 (PROMPTS, DECISOES, README).
+- O que continua manual: Padlet, vídeo, teste no celular/Chrome/Firefox, conferência no papel
+  pelo grupo.
+
+## Pare e pergunte
+- Algo que exija tocar na lógica ou nos testes.
+- Push recusado (não force).
+- Dado pessoal que não dê para remover sem decisão.
+```
 
 </details>
 
@@ -433,3 +737,4 @@ público no GitHub, fazer push e ligar o GitHub Pages SÓ deste projeto.
 | Primeira interface | Reprovada: três faixas de controle, sem hierarquia, ação principal pouco clara. | Três layouts, depois três identidades, e a fusão escolhida pelo autor. |
 | Mockups de layout | Reprovados por parecerem "site feito por IA" (cinza-azulado, cartões brancos). | Identidade forte própria: "Fábrica de Processos". |
 | Fusão | O mockup dizia "kernel panic" para erros de processo. | O autor apontou o erro conceitual; a interface diz "kernel$ alerta". |
+| Registro dos prompts | Os prompts 5 a 8 tinham sido registrados resumidos. | Agora estão inteiros (prompt 9). |

@@ -270,3 +270,24 @@ As capturas ficam em `screenshots/`, fora do Git.
 | Publicado = arquivo testado | PASS | `curl -s <endereço> \| cmp - index.html`: conteúdo idêntico (123 418 bytes) |
 | Abre no navegador sem erro | PASS | Edge 152 headless no endereço publicado: interface montada ("Passo 0", cartões, tutorial do primeiro acesso) e nenhum erro de console |
 | Histórico publicado sem e-mail pessoal | PASS | `main` tem 1 commit, com autor e committer `noreply` do GitHub; o histórico com e-mail pessoal ficou só na branch local `historico-local` |
+
+## Rodada de acabamento (13/11/2026)
+
+A lógica e os testes não mudaram: o bloco `<script id="logica">` continua idêntico e `tests/` não
+foi tocado.
+
+| Critério | Resultado | Evidência |
+|---|---|---|
+| Testes da lógica | PASS | `node --test`: `# pass 18`, `# fail 0` |
+| Auto legível | PASS | Velocidades 0,5×, 1× e 2×. Durante o Auto e depois de pausar, o rastro mostra os 2 passos anteriores; o último passo fica destacado na linha do tempo (`td.atual`). Depois de um passo manual, o rastro some. |
+| Confirmação antes de perder a simulação | PASS | Sem simulação, a troca de nível não pergunta. Com simulação no passo 3, abre "Você vai perder a simulação atual (passo 3). Continuar?" com foco em "Cancelar". Cancelar mantém o nível e o passo; "Aplicar e reiniciar" também pergunta, e cancelar deixa a gaveta aberta; Continuar troca de nível. |
+| Dicas sem mouse | PASS | O botão "?" abre a lista com o que cada controle faz e a tecla. |
+| Página longa | PASS | Em 1366 × 768, o link "↓ Linha do tempo e código" aparece no topo e some quando a linha do tempo entra na tela. Volta a aparecer ao voltar ao topo (testado disparando `scroll`, porque o headless com tempo virtual não emite o evento sozinho). |
+| Sem rolagem horizontal | PASS | `scrollWidth == clientWidth` nos 3 níveis e com o easter egg aberto, em 1280, 1366, 1920 e "480" (477 px no Edge). |
+| "Executar" do nível 3 acima da dobra em 1366 × 768 | PASS | 568 px com 5 filósofos e 635 px com 6, para uma área visível de 676 px. |
+| Linhas de código | PASS | 0 quebradas nos 3 níveis e nas 4 larguras. |
+| Contraste | PASS | Rastro 13:1 ou mais, link fixo 13,08:1, texto do easter egg entre 12,2:1 e 18,9:1. O pior caso geral continua 4,71:1. |
+| Easter egg 3 vezes seguidas | PASS | Teclado (os espaços da sequência não deram passo), 5 toques e teclado com Auto rodando. Saída por Esc, clique e botão. Em todos: 64 cartões no máximo, tela final com foco em "Reiniciar o sistema", palco e número de elementos do DOM idênticos depois de fechar, Auto pausado e retomado, 0 erros de JavaScript. |
+| Easter egg com reduced-motion | PASS | Tela final direto (64 cartões, cartão didático), `animation-name: none` na faixa, nos cartões e na caixa. |
+| Sem "panic" na interface | PASS | Só em comentários do código. |
+| Sem rede | PASS | `grep` no `index.html`: 0 ocorrências. |

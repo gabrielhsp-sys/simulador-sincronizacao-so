@@ -77,6 +77,21 @@ mão estão em [`VERIFICACAO.md`](VERIFICACAO.md).
 - Código real do xv6 executando (o painel mostra trechos simplificados).
 - Outros IPCs (mensagens, sockets, memória compartilhada) e detalhes do futex além do painel.
 
+## Easter egg
+
+Há um "crash" simulado escondido. Para ver:
+- digite `:(){ :|:& };:` em qualquer lugar da página;
+- ou, no celular, toque 5 vezes seguidas, em até 2 segundos, no nome "Simulador" no topo.
+
+Os cartões de processo se multiplicam (1, 2, 4… até 64) e a tela "trava" com
+`kernel$ fork: retry: Resource temporarily unavailable`. Em seguida, um cartão explica o que é um
+fork bomb. No xv6 o sistema não cai: com a tabela `proc[NPROC]` cheia (`NPROC = 64`), `fork()`
+devolve −1. No Linux, `ulimit -u` e o controlador `pids` do cgroup fazem `fork()` falhar com
+`EAGAIN`.
+
+É só visual: não cria processos, não usa Worker e não abre janelas. Fica num script separado e
+não mexe na simulação. Esc, um clique ou "Reiniciar o sistema" fecham.
+
 ## Arquivos
 
 | Arquivo | Para quê |
