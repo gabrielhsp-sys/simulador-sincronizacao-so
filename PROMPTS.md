@@ -1011,3 +1011,94 @@ De uma vez: inventário → reescrita → conferência → commit. Pare só em "
 | O vídeo pedia o modo Apresentar e depois o botão Desafios e a linha marcada com ► | O modo Apresentar esconde os botões Desafios, Glossário e Ajuda e o código dos processos. | O vídeo é gravado sem o modo Apresentar, com F11. A aula continua com o modo Apresentar e não usa esses botões. |
 | A fala citava `amoswap` e o lockdep do Linux | Não estão no `README.md` nem no `DECISOES.md`. | Saíram da fala. |
 | O vídeo abria o terminal pela crase | No teclado ABNT2 a crase é tecla morta. | O terminal abre pelo campo `kernel$` do rodapé; a crase fica como alternativa. |
+
+## Roteiros reformatados para leitura de relance (prompt 14)
+
+Os dois roteiros mudaram só no layout, para dar para ler com os olhos no simulador. A fala é a
+mesma do prompt 13, palavra por palavra e na mesma ordem. O simulador não mudou.
+
+<details>
+<summary>Prompt 14: reformatar os roteiros para leitura fácil</summary>
+
+```markdown
+# Reformatar os roteiros para leitura fácil: separar e organizar
+
+## Objetivo
+ROTEIRO-APRESENTACAO.md e VIDEO.md estão difíceis de ler em voz alta: o texto está denso.
+Reorganize os dois só no LAYOUT, para que dê para ler de relance, com os olhos no simulador,
+sem se perder. Formato: só os .md (nada de PDF, HTML ou outro arquivo).
+
+## Projeto
+[pasta do projeto] (simulador de sincronização, comunicação e
+deadlock). Repo público [login do autor]/simulador-sincronizacao-so, branch main.
+
+## O que já existe — não refazer
+- Os dois roteiros já foram reescritos como fala pronta (commit 598d86d). O TEXTO falado está
+  aprovado: não reescreva, não corte e não acrescente palavras da fala.
+- Contagens de palavras e tempos por trecho ficam como estão (aula ≈ 647 palavras, ≈ 4:58;
+  vídeo ≈ 921 palavras, ≈ 7:05). Se mover frase de lugar, as contagens têm de continuar batendo.
+- Não toque em index.html, <script id="logica"> nem tests/ (18/18).
+
+## O que mudar (layout apenas)
+1. Um trecho = uma seção bem marcada: título com tempo, depois NA TELA, depois FALE, depois uma
+   linha de separação (---) antes do próximo trecho.
+2. NA TELA: lista curta, um item por ação, com a tecla ou o botão exato em **negrito** e uma caixa
+   de marcação (- [ ]) para riscar durante a gravação ou a aula.
+3. FALE: UMA frase por linha, com linha em branco entre as frases, para o olho não pular.
+   Marcas "(pausa)" e "(ação: ...)" ficam em linha própria, em itálico, no ponto exato da fala
+   em que acontecem. Se uma ação na tela acontece no meio da fala, quebre o FALE em dois
+   blocos: antes da ação e depois dela.
+4. Destaque em **negrito** só a palavra-chave de cada frase onde a voz deve pesar (termo
+   técnico novo, número, nome do botão). Sem exagero: no máximo 1–2 por frase.
+5. No topo de cada roteiro: um quadro de uma tela só com quem lê, duração, o que deixar aberto
+   (lista de checagem) e a ordem dos trechos com tempo e palavras (tabela de 3 colunas).
+6. No fim: o bloco "Se algo der errado" como tabela de 2 colunas (problema | o que fazer).
+7. Fonte e estrutura simples: sem HTML, sem emoji, sem tabela dentro de tabela. Tem de ficar
+   legível no preview de Markdown do VS Code e como texto puro.
+8. Opcional (fork bomb na aula): fica no fim, em seção própria, marcado "OPCIONAL, fora dos 5 min".
+
+## Conferência
+- Compare as frases faladas antes e depois (mesma sequência, mesmas palavras). Mostre no
+  relatório o resultado de uma contagem de palavras da fala por trecho, antes e depois.
+- Termos proibidos continuam proibidos: "panic" (exceto onde o xv6 chama panic()), nomes de
+  pessoas (use "Pessoa 2"), travessão.
+- Confira que cada tecla/botão citado em NA TELA ainda existe no index.html (só leitura).
+
+## Ferramentas e skills
+Nenhuma skill do catálogo cobre esta tarefa (é formatação de Markdown, sem UI nem código).
+Se precisar mexer na redação para a quebra de linha, siga o workflow de texto em português do
+ecossistema (workflows/text-review/HUMANIZER.md), só leitura.
+
+## Modo
+De uma vez: ler → reformatar → conferir → commit. Pare só em "Pare e pergunte".
+
+## Git
+- Commit dos dois roteiros (e de PROMPTS.md, onde registrar este pedido sanitizado: sem nome,
+  login nem caminho pessoal).
+- Autor: o MESMO dos commits anteriores ao 598d86d (confira com git log; use user.name e
+  user.email só locais do repositório, sem alterar o ~/.gitconfig). Não reescreva histórico.
+- Assumido pelo autor, como nas rodadas anteriores: push na main de
+  [login do autor]/simulador-sincronizacao-so, sem --force, sem rebase. Nenhum outro repositório.
+- A pasta prompts/ fica fora do git.
+
+## Relatório
+Por roteiro: o que mudou no layout, contagem de palavras antes × depois por trecho, e o que o
+autor deve testar (abrir o preview do .md e ler um trecho em voz alta).
+
+## Pare e pergunte
+- Se a contagem de palavras divergir e você não souber explicar.
+- Se algo exigir mexer no simulador.
+- Push recusado (não force).
+```
+
+</details>
+
+### Como a fala foi conferida nesta rodada
+
+| Conferência | Resultado |
+|---|---|
+| Frases faladas antes × depois (extraídas por script, sem negrito nem crase) | Idênticas nos dois roteiros: mesma ordem, mesmas palavras. |
+| Palavras por trecho | Iguais antes e depois: aula 67, 167, 208, 157, 48 (647) e opcional 48; vídeo 921. |
+| Marcas "(pausa)" | Continuam depois das mesmas frases. |
+| Negrito na fala | No máximo 2 por frase. |
+| Teclas e botões do NA TELA | Todos existem no `index.html`. |

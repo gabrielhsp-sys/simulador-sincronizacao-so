@@ -1,395 +1,490 @@
 # Roteiro do vídeo (7 minutos)
 
-- **Quem lê:** o autor, gravando a tela e a voz.
-- **Duração:** cerca de 7 minutos de fala, 921 palavras a 130 por minuto, que é um ritmo calmo.
-- **Como ler:** **NA TELA** é o que você faz, antes de ler a fala logo abaixo. **FALE** é o texto
-  para ler em voz alta, uma frase por linha. "(pausa)" quer dizer: pare uns dois segundos e deixe a
-  tela aparecer no vídeo.
-- **Teclas:** `1` a `5` executam o processo daquela posição (`1` é o primeiro cartão). `Z` volta um
-  passo. `R` reinicia o nível.
+**Quem lê:** o autor, gravando a tela e a voz.
+
+**Duração:** cerca de 7 minutos de fala, 921 palavras a 130 por minuto, que é um ritmo calmo.
+
+**Antes de gravar, deixe pronto:**
+
+- [ ] Abas, programas e notificações fechados (no Windows, ative "Não incomodar").
+- [ ] Uma gravação de teste inteira, seguindo este roteiro. Depois feche a janela.
+- [ ] O simulador numa janela anônima **nova**, para o tutorial aparecer como na primeira visita,
+      pelo link "Pela internet" do `README.md`.
+- [ ] O tutorial na primeira tela, "Você é o escalonador".
+- [ ] Zoom do navegador em 100%: **Ctrl+0**. Tela cheia com **F11**.
+- [ ] **Não** use o modo Apresentar no vídeo: ele esconde os botões **Desafios**, **Glossário** e
+      **Ajuda** e o código dos processos, que este roteiro mostra.
+- [ ] Microfone testado: grave 10 segundos e ouça.
+- [ ] O gravador de tela que você já tem (no Windows, a Barra de Jogos abre com **Win+G**).
+- [ ] Este roteiro noutra tela ou impresso.
+
+**Ordem dos trechos:**
+
+| Trecho | Tempo | Palavras |
+|---|---|---|
+| 1. Abertura | 0:00–0:30 | 63 |
+| 2. Tutorial e glossário | 0:30–1:10 | 85 |
+| 3. Nível 1: condição de corrida | 1:10–2:00 | 108 |
+| 4. Nível 1: spinlock e o painel do xv6 | 2:00–2:50 | 113 |
+| 5. Nível 2: o lost wakeup | 2:50–3:50 | 130 |
+| 6. Nível 2: a versão do xv6 | 3:50–4:25 | 77 |
+| 7. Nível 3: deadlock | 4:25–5:10 | 99 |
+| 8. Nível 3: ordem global | 5:10–5:45 | 75 |
+| 9. Desafios | 5:45–6:05 | 45 |
+| 10. Terminal | 6:05–6:30 | 55 |
+| 11. Fork bomb e fechamento | 6:30–7:05 | 71 |
+| Total | 7:05 | 921 |
+
+---
+
+## Como ler
+
+- **NA TELA:** o que você faz na tela, em ordem. Risque cada item quando fizer.
+- **FALE:** o texto para ler em voz alta, uma frase por linha. O **negrito** marca onde a voz pesa.
+- *(pausa)*: pare uns dois segundos e deixe a tela aparecer no vídeo.
+- *(ação: ...)*: pare de ler, faça na tela o que está escrito e só então siga.
+- **Teclas:** **1** a **5** executam o processo daquela posição (**1** é o primeiro cartão).
+  **Z** volta um passo. **R** reinicia o nível.
 - **Pergunta "Perder a simulação atual?":** aparece quando você troca de nível, clica em
   **Aplicar e reiniciar** ou começa um desafio depois de dar passos. Clique sempre em **Continuar**.
   Não aperte Enter: o botão que já vem marcado é o **Cancelar**.
 
-## Antes de gravar
+---
 
-- [ ] Feche abas, programas e notificações (no Windows, ative "Não incomodar").
-- [ ] Faça uma gravação de teste inteira, seguindo este roteiro. Depois feche a janela.
-- [ ] Abra o simulador numa janela anônima **nova**, para o tutorial aparecer como na primeira
-      visita, pelo link "Pela internet" do `README.md`.
-- [ ] Deixe o tutorial na primeira tela, "Você é o escalonador".
-- [ ] Zoom do navegador em 100%: **Ctrl+0**. Tela cheia com **F11**.
-- [ ] **Não** use o modo Apresentar no vídeo: ele esconde os botões **Desafios**, **Glossário** e
-      **Ajuda** e o código dos processos, que este roteiro mostra.
-- [ ] Teste o microfone: grave 10 segundos e ouça.
-- [ ] Use o gravador de tela que você já tem (no Windows, a Barra de Jogos abre com **Win+G**).
-- [ ] Deixe este roteiro noutra tela ou impresso.
+## 1. Abertura · 0:00–0:30
 
-### 0:00–0:30 · Abertura
+63 palavras, cerca de 29 s.
 
-*Fala: 63 palavras (~29 s).*
+**NA TELA**
 
-**NA TELA:** tutorial aberto na primeira tela. Não clique em nada ainda.
+- [ ] Tutorial aberto na primeira tela.
+- [ ] Não clique em nada ainda.
 
-**FALE:**
+**FALE**
 
 Olá.
 
-Este é o simulador de sincronização, comunicação e deadlock do nosso projeto integrador.
+Este é o simulador de sincronização, comunicação e deadlock do nosso **projeto integrador**.
 
-É um arquivo HTML só, que roda no navegador, até sem internet.
+É um arquivo HTML só, que roda no navegador, até **sem internet**.
 
-Ele tem três níveis.
+Ele tem **três níveis**.
 
 Um contador compartilhado, um pipe entre produtor e consumidor e o jantar dos filósofos.
 
-Em cada nível, a gente provoca um bug e depois vê a correção.
+Em cada nível, a gente **provoca um bug** e depois vê a **correção**.
 
 Vamos passo a passo, com calma.
 
-(pausa)
+*(pausa)*
 
-### 0:30–1:10 · Tutorial e glossário
+---
 
-*Fala: 85 palavras (~39 s).*
+## 2. Tutorial e glossário · 0:30–1:10
 
-**NA TELA:** deixe a primeira tela do tutorial à vista.
+85 palavras, cerca de 39 s.
 
-**FALE:**
+**NA TELA**
 
-O tutorial começa pelo nosso papel: aqui a gente é o escalonador.
+- [ ] Deixe a primeira tela do tutorial à vista.
+- [ ] Clique em **Próximo**.
+- [ ] Clique em **Próximo** de novo.
+- [ ] Na última tela, clique em **Começar**.
+- [ ] Clique em **Glossário**, no topo.
+- [ ] Role a lista devagar.
+- [ ] Clique em **Fechar**.
 
-O escalonador é a parte do sistema operacional que decide quem usa a CPU a cada momento.
+**FALE**
 
-A cada passo, a gente escolhe qual processo executa a próxima linha.
+O tutorial começa pelo nosso papel: aqui a gente é o **escalonador**.
 
-**NA TELA:** clique em **Próximo**, depois em **Próximo** de novo e, na última tela, em
-**Começar**.
+O escalonador é a parte do sistema operacional que decide quem usa a **CPU** a cada momento.
 
-**FALE:**
+A cada passo, a gente escolhe qual processo executa a **próxima linha**.
 
-Dá para clicar em Executar no cartão do processo ou usar as teclas de 1 a 6.
+*(ação: Próximo, Próximo, Começar)*
 
-A linha do tempo, mais abaixo, mostra a ordem que a gente escolheu.
+Dá para clicar em **Executar** no cartão do processo ou usar as teclas de **1 a 6**.
 
-**NA TELA:** clique em **Glossário**, no topo. Role a lista devagar. Clique em **Fechar**.
+A **linha do tempo**, mais abaixo, mostra a ordem que a gente escolheu.
 
-**FALE:**
+*(ação: Glossário; role a lista devagar; Fechar)*
 
-No topo também fica o glossário, com os quinze termos que aparecem no simulador.
+No topo também fica o **glossário**, com os **quinze** termos que aparecem no simulador.
 
-(pausa)
+*(pausa)*
 
-### 1:10–2:00 · Nível 1: condição de corrida
+---
 
-*Fala: 108 palavras (~50 s).*
+## 3. Nível 1: condição de corrida · 1:10–2:00
 
-**NA TELA:** nível 1, sem lock. Aponte os cartões P0 e P1 e o contador em 0. Aperte **1**, depois
-**2**.
+108 palavras, cerca de 50 s.
 
-**FALE:**
+**NA TELA**
 
-No primeiro nível, dois processos somam 1 no mesmo contador, duas vezes cada.
+- [ ] Nível 1, sem lock.
+- [ ] Aponte os cartões **P0** e **P1** e o contador em 0.
+- [ ] Aperte **1**, depois **2**.
+- [ ] Aperte **1**, depois **2**.
+- [ ] Aponte "atualizações perdidas: 1" e a linha `kernel$ alerta`.
 
-O simulador intercala os passos.
+**FALE**
 
-Cada processo representa um fluxo concorrente, como se estivesse noutra CPU.
+*(ação: aponte P0, P1 e o contador; aperte 1, depois 2)*
 
-`contador++` parece uma coisa só, mas são dois passos: ler e escrever.
+No primeiro nível, dois processos somam 1 no **mesmo contador**, duas vezes cada.
 
-P0 leu zero.
+O simulador **intercala** os passos.
 
-P1 também leu zero.
+Cada processo representa um **fluxo concorrente**, como se estivesse noutra CPU.
 
-**NA TELA:** aperte **1**, depois **2**. Aponte "atualizações perdidas: 1" e a linha
-`kernel$ alerta`.
+`contador++` parece uma coisa só, mas são **dois passos**: ler e escrever.
 
-**FALE:**
+P0 leu **zero**.
 
-P0 escreveu 1, e P1 escreveu 1 por cima.
+P1 **também** leu zero.
 
-Um incremento sumiu: é uma atualização perdida.
+*(ação: aperte 1, depois 2; aponte "atualizações perdidas: 1" e `kernel$ alerta`)*
 
-Depois de dois incrementos, o contador deveria valer 2, e vale 1.
+P0 escreveu 1, e P1 escreveu 1 **por cima**.
 
-(pausa)
+Um incremento sumiu: é uma **atualização perdida**.
 
-Isso é uma condição de corrida: o resultado depende da ordem em que os passos se intercalam.
+Depois de dois incrementos, o contador deveria valer **2**, e vale **1**.
 
-A tela mostra um alerta, mas o kernel não cai.
+*(pausa)*
 
-O erro é dos processos.
+Isso é uma **condição de corrida**: o resultado depende da ordem em que os passos se intercalam.
 
-### 2:00–2:50 · Nível 1: spinlock e o painel do xv6
+A tela mostra um alerta, mas o kernel **não cai**.
 
-*Fala: 113 palavras (~52 s).*
+O erro é **dos processos**.
 
-**NA TELA:** clique em **Ajustar**, marque **Proteger com lock (spinlock)** e clique em
-**Aplicar e reiniciar**. Na pergunta, clique em **Continuar**.
+---
 
-**FALE:**
+## 4. Nível 1: spinlock e o painel do xv6 · 2:00–2:50
 
-O trecho que mexe no contador é a seção crítica.
+113 palavras, cerca de 52 s.
 
-Só um processo pode estar nele por vez.
+**NA TELA**
 
-Para isso existe o lock, uma trava: `acquire` fecha e `release` abre.
+- [ ] Clique em **Ajustar**.
+- [ ] Marque **Proteger com lock (spinlock)**.
+- [ ] Clique em **Aplicar e reiniciar**.
+- [ ] Na pergunta, clique em **Continuar**.
+- [ ] Aperte **1**, **2**, **1**, **2**.
+- [ ] Role a página para baixo e clique em **Como o xv6 e o Linux fazem**.
+- [ ] Role o painel devagar.
 
-**NA TELA:** aperte **1**, **2**, **1**, **2**.
+**FALE**
 
-**FALE:**
+*(ação: Ajustar, marque Proteger com lock (spinlock), Aplicar e reiniciar, Continuar)*
 
-P0 pegou o lock.
+O trecho que mexe no contador é a **seção crítica**.
 
-P1 encontrou o lock ocupado e girou, gastando o passo sem avançar.
+Só **um** processo pode estar nele por vez.
 
-Por isso o nome spinlock.
+Para isso existe o **lock**, uma trava: `acquire` fecha e `release` abre.
 
-Enquanto P0 não soltar o lock, P1 não chega perto do contador.
+*(ação: aperte 1, 2, 1, 2)*
 
-**NA TELA:** role a página para baixo e clique em **Como o xv6 e o Linux fazem**. Role o painel
-devagar.
+P0 **pegou** o lock.
 
-**FALE:**
+P1 encontrou o lock **ocupado** e girou, gastando o passo sem avançar.
 
-Este painel mostra o spinlock do xv6, simplificado.
+Por isso o nome **spinlock**.
 
-No xv6, `acquire` desliga as interrupções naquela CPU.
+Enquanto P0 não soltar o lock, P1 **não chega perto** do contador.
 
-Quem gira esperando é outra CPU.
+*(ação: role para baixo, clique em Como o xv6 e o Linux fazem, role o painel devagar)*
 
-No Linux, o futex tenta pegar o lock no espaço de usuário e só dorme no núcleo se houver disputa.
+Este painel mostra o spinlock do **xv6**, simplificado.
 
-E o núcleo do xv6 não usa semáforo.
+No xv6, `acquire` **desliga as interrupções** naquela CPU.
 
-### 2:50–3:50 · Nível 2: o lost wakeup
+Quem gira esperando é **outra CPU**.
 
-*Fala: 130 palavras (~1 min).*
+No Linux, o **futex** tenta pegar o lock no espaço de usuário e só dorme no núcleo se houver **disputa**.
 
-**NA TELA:** clique na aba **2 Pipe**. Na pergunta, clique em **Continuar**. Depois clique em
-**Ajustar**, escolha em **Versão** a opção **Ingênua: teste e sleep separados, sem lock** e clique em
-**Aplicar e reiniciar**.
+E o núcleo do xv6 **não usa semáforo**.
 
-**FALE:**
+---
 
-O segundo nível é comunicação: o pipe do xv6, com um produtor e um consumidor.
+## 5. Nível 2: o lost wakeup · 2:50–3:50
 
-Os itens ficam num buffer circular, um vetor pequeno que volta ao começo quando chega ao fim.
+130 palavras, cerca de 1 min.
 
-`nread` conta o que já foi lido, e `nwrite`, o que já foi escrito.
+**NA TELA**
 
-Com o buffer vazio, o consumidor dorme com `sleep`.
+- [ ] Clique na aba **2 Pipe**.
+- [ ] Na pergunta, clique em **Continuar**.
+- [ ] Clique em **Ajustar**.
+- [ ] Em **Versão**, escolha **Ingênua: teste e sleep separados, sem lock**.
+- [ ] Clique em **Aplicar e reiniciar**.
+- [ ] Aperte **2**, depois **1** quatro vezes.
+- [ ] Aponte o aviso "Wakeup perdido".
+- [ ] Aperte **1**, depois **2**, depois **1**.
+- [ ] Aponte a linha `kernel$ alerta: travado`.
 
-Quando chega item, o produtor chama `wakeup` e acorda quem dorme.
+**FALE**
 
-No anel, o R marca onde o consumidor lê, e o W, onde o produtor escreve.
+*(ação: aba 2 Pipe, Continuar; Ajustar, Versão Ingênua, Aplicar e reiniciar)*
 
-Nesta versão ingênua, testar e dormir são passos separados.
+O segundo nível é **comunicação**: o pipe do xv6, com um produtor e um consumidor.
 
-**NA TELA:** aperte **2**, depois **1** quatro vezes. Aponte o aviso "Wakeup perdido".
+Os itens ficam num **buffer circular**, um vetor pequeno que volta ao começo quando chega ao fim.
 
-**FALE:**
+`nread` conta o que já foi **lido**, e `nwrite`, o que já foi **escrito**.
 
-O consumidor viu o buffer vazio e decidiu dormir, mas ainda não dormiu.
+Com o buffer vazio, o consumidor dorme com **`sleep`**.
+
+Quando chega item, o produtor chama **`wakeup`** e acorda quem dorme.
+
+No anel, o **R** marca onde o consumidor lê, e o **W**, onde o produtor escreve.
+
+Nesta versão ingênua, testar e dormir são **passos separados**.
+
+*(ação: aperte 2, depois 1 quatro vezes; aponte "Wakeup perdido")*
+
+O consumidor viu o buffer vazio e decidiu dormir, mas **ainda não** dormiu.
 
 O produtor escreveu e chamou `wakeup`.
 
-Não tinha ninguém dormindo, e o aviso se perdeu.
+**Não tinha ninguém** dormindo, e o aviso se perdeu.
 
-**NA TELA:** aperte **1**, depois **2**, depois **1**. Aponte a linha
-`kernel$ alerta: travado`.
+*(ação: aperte 1, depois 2, depois 1; aponte `kernel$ alerta: travado`)*
 
-**FALE:**
+Agora os dois dormem **para sempre**.
 
-Agora os dois dormem para sempre.
+Esse é o **lost wakeup**.
 
-Esse é o lost wakeup.
+---
 
-### 3:50–4:25 · Nível 2: a versão do xv6
+## 6. Nível 2: a versão do xv6 · 3:50–4:25
 
-*Fala: 77 palavras (~36 s).*
+77 palavras, cerca de 36 s.
 
-**NA TELA:** clique em **Ajustar**, escolha em **Versão** a opção **Correta (como o xv6)** e clique
-em **Aplicar e reiniciar**. Na pergunta, clique em **Continuar**. Depois aperte **1** onze vezes,
-com calma.
+**NA TELA**
 
-**FALE:**
+- [ ] Clique em **Ajustar**.
+- [ ] Em **Versão**, escolha **Correta (como o xv6)**.
+- [ ] Clique em **Aplicar e reiniciar**.
+- [ ] Na pergunta, clique em **Continuar**.
+- [ ] Aperte **1** onze vezes, com calma.
+- [ ] Aperte **2** quatro vezes.
 
-Na versão correta, como no xv6, o produtor pega o lock antes de testar.
+**FALE**
+
+*(ação: Ajustar, Versão Correta (como o xv6), Aplicar e reiniciar, Continuar; aperte 1 onze vezes, com calma)*
+
+Na versão correta, como no xv6, o produtor pega o **lock** antes de testar.
 
 Ele encheu o buffer e foi dormir.
 
-Olha a frase na tela: o `sleep` solta o lock e dorme de uma vez.
+Olha a frase na tela: o `sleep` solta o lock e dorme **de uma vez**.
 
-Assim, ninguém consegue chamar `wakeup` no meio do caminho.
+Assim, ninguém consegue chamar `wakeup` **no meio do caminho**.
 
-**NA TELA:** aperte **2** quatro vezes.
-
-**FALE:**
+*(ação: aperte 2 quatro vezes)*
 
 O consumidor leu um item e chamou `wakeup`.
 
 O produtor acordou.
 
-Nada se perdeu.
+**Nada** se perdeu.
 
-É o mesmo pipe do xv6: `nread`, `nwrite`, `sleep` e `wakeup`, com o lock do pipe em volta.
+É o **mesmo pipe** do xv6: `nread`, `nwrite`, `sleep` e `wakeup`, com o lock do pipe em volta.
 
-### 4:25–5:10 · Nível 3: deadlock
+---
 
-*Fala: 99 palavras (~46 s).*
+## 7. Nível 3: deadlock · 4:25–5:10
 
-**NA TELA:** clique na aba **3 Filósofos**. Na pergunta, clique em **Continuar**. Depois aperte
-**1**, **2**, **3**, **4**, **5**.
+99 palavras, cerca de 46 s.
 
-**FALE:**
+**NA TELA**
 
-O terceiro nível é deadlock, com o jantar dos filósofos.
+- [ ] Clique na aba **3 Filósofos**.
+- [ ] Na pergunta, clique em **Continuar**.
+- [ ] Aperte **1**, **2**, **3**, **4**, **5**.
+- [ ] Aperte **1**, **2**, **3**, **4**, **5** de novo.
+- [ ] Aponte o ciclo vermelho no grafo e as condições de Coffman.
 
-São cinco filósofos e cinco garfos, e cada um precisa de dois garfos para comer.
+**FALE**
 
-Todos pegaram o garfo da esquerda.
+*(ação: aba 3 Filósofos, Continuar; aperte 1, 2, 3, 4, 5)*
 
-O grafo mostra quem está com cada garfo e quem espera qual garfo.
+O terceiro nível é **deadlock**, com o jantar dos filósofos.
 
-**NA TELA:** aperte **1**, **2**, **3**, **4**, **5** de novo. Aponte o ciclo vermelho no grafo e
-as condições de Coffman.
+São **cinco** filósofos e **cinco** garfos, e cada um precisa de dois garfos para comer.
 
-**FALE:**
+Todos pegaram o garfo da **esquerda**.
 
-Agora cada um espera o garfo do vizinho, segurando o seu.
+O **grafo** mostra quem está com cada garfo e quem espera qual garfo.
 
-Isso é um deadlock: cada um espera um recurso que está com outro do grupo.
+*(ação: aperte 1, 2, 3, 4, 5 de novo; aponte o ciclo vermelho e as condições de Coffman)*
 
-No grafo de alocação aparece o ciclo, que é a espera circular.
+Agora cada um espera o garfo do **vizinho**, segurando o seu.
 
-Como cada garfo é um só, ciclo aqui é deadlock.
+Isso é um **deadlock**: cada um espera um recurso que está com outro do grupo.
 
-As quatro condições de Coffman estão presentes.
+No grafo de alocação aparece o ciclo, que é a **espera circular**.
 
-### 5:10–5:45 · Nível 3: ordem global
+Como cada garfo é **um só**, ciclo aqui é deadlock.
 
-*Fala: 75 palavras (~35 s).*
+As **quatro condições** de Coffman estão presentes.
 
-**NA TELA:** clique em **Ajustar**, escolha em **Estratégia para pegar os garfos** a opção
-**Ordem global (menor número primeiro)** e clique em **Aplicar e reiniciar**. Na pergunta, clique em
-**Continuar**. Depois aperte **1**, **2**, **3**, **4**, **5**.
+---
 
-**FALE:**
+## 8. Nível 3: ordem global · 5:10–5:45
 
-A correção é a ordem global: todos pegam primeiro o garfo de menor número.
+75 palavras, cerca de 35 s.
 
-F4 precisa do garfo zero primeiro e espera sem segurar nada.
+**NA TELA**
 
-**NA TELA:** aperte **4** três vezes.
+- [ ] Clique em **Ajustar**.
+- [ ] Em **Estratégia para pegar os garfos**, escolha **Ordem global (menor número primeiro)**.
+- [ ] Clique em **Aplicar e reiniciar**.
+- [ ] Na pergunta, clique em **Continuar**.
+- [ ] Aperte **1**, **2**, **3**, **4**, **5**.
+- [ ] Aperte **4** três vezes.
 
-**FALE:**
+**FALE**
 
-F3 pegou o segundo garfo, comeu e soltou os dois.
+*(ação: Ajustar, Ordem global, Aplicar e reiniciar, Continuar; aperte 1, 2, 3, 4, 5)*
 
-A espera circular não se forma.
+A correção é a **ordem global**: todos pegam primeiro o garfo de **menor número**.
 
-O grafo fica sem ciclo, e nas condições de Coffman a espera circular aparece como ausente.
+F4 precisa do garfo zero primeiro e espera **sem segurar nada**.
 
-No xv6, a regra para locks é a mesma: quem precisa de vários pega sempre na mesma ordem.
+*(ação: aperte 4 três vezes)*
 
-### 5:45–6:05 · Desafios
+F3 pegou o segundo garfo, comeu e **soltou os dois**.
 
-*Fala: 45 palavras (~21 s).*
+A espera circular **não se forma**.
 
-**NA TELA:** clique em **Desafios**, no topo, e em **Começar 1.1**. Na pergunta, clique em
-**Continuar**. Aperte **1**, **2**, **2**, **1**. Espere a janela "Desafio concluído".
+O grafo fica **sem ciclo**, e nas condições de Coffman a espera circular aparece como **ausente**.
 
-**FALE:**
+No xv6, a regra para locks é a mesma: quem precisa de vários pega sempre na **mesma ordem**.
 
-Os desafios são opcionais.
+---
 
-Cada um vale até três estrelas, e não existe derrota.
+## 9. Desafios · 5:45–6:05
 
-Se travar, dá para pedir uma dica.
+45 palavras, cerca de 21 s.
 
-Este pede uma atualização perdida.
+**NA TELA**
 
-(pausa)
+- [ ] Clique em **Desafios**, no topo.
+- [ ] Clique em **Começar 1.1**.
+- [ ] Na pergunta, clique em **Continuar**.
+- [ ] Aperte **1**, **2**, **2**, **1**.
+- [ ] Espere a janela "Desafio concluído".
+- [ ] Clique em **Continuar explorando**.
 
-Ao concluir, a janela explica por que aquilo aconteceu.
+**FALE**
 
-O desafio seguinte pede o mesmo com o lock ligado.
+*(ação: Desafios, Começar 1.1, Continuar; aperte 1, 2, 2, 1; espere "Desafio concluído")*
 
-**NA TELA:** clique em **Continuar explorando**.
+Os desafios são **opcionais**.
 
-### 6:05–6:30 · Terminal
+Cada um vale até **três estrelas**, e não existe derrota.
 
-*Fala: 55 palavras (~25 s).*
+Se travar, dá para pedir uma **dica**.
 
-**NA TELA:** clique no campo `kernel$` do rodapé, onde aparece "help" apagado. Digite `help` e
-aperte Enter.
+Este pede uma **atualização perdida**.
 
-**FALE:**
+*(pausa)*
 
-O simulador também tem um terminal.
+Ao concluir, a janela explica **por que** aquilo aconteceu.
 
-Ele abre por este campo do rodapé ou pela tecla crase.
+O desafio seguinte pede o mesmo **com o lock** ligado.
 
-O `help` lista os comandos, por categoria.
+*(ação: clique em Continuar explorando)*
 
-**NA TELA:** digite `ps` e aperte Enter.
+---
 
-**FALE:**
+## 10. Terminal · 6:05–6:30
 
-O `ps` mostra os processos do nível e o estado de cada um.
+55 palavras, cerca de 25 s.
 
-**NA TELA:** digite `glossario deadlock` e aperte Enter.
+**NA TELA**
 
-**FALE:**
+- [ ] Clique no campo `kernel$` do rodapé, onde aparece "help" apagado.
+- [ ] Digite `help` e aperte **Enter**.
+- [ ] Digite `ps` e aperte **Enter**.
+- [ ] Digite `glossario deadlock` e aperte **Enter**.
 
-E o `glossario` explica um termo.
+**FALE**
 
-Nada roda de verdade: os comandos usam os mesmos botões da página.
+*(ação: campo kernel$ do rodapé; digite help, Enter)*
 
-### 6:30–7:05 · Fork bomb e fechamento
+O simulador também tem um **terminal**.
 
-*Fala: 71 palavras (~33 s).*
+Ele abre por este campo do rodapé ou pela tecla **crase**.
 
-**NA TELA:** digite `forkbomb` e aperte Enter. Não clique em nada durante a animação, porque um
-clique fecha. Espere uns 9 segundos, até o cartão "Calma: foi só um easter egg".
+O `help` lista os comandos, **por categoria**.
 
-**FALE:**
+*(ação: digite ps, Enter)*
 
-O último comando é um jogo: o fork bomb.
+O `ps` mostra os processos do nível e o **estado** de cada um.
 
-Os processos se copiam sem parar, até lotar a tabela.
+*(ação: digite glossario deadlock, Enter)*
 
-(pausa)
+E o `glossario` **explica um termo**.
 
-Parece que o site caiu, mas é só animação.
+**Nada roda** de verdade: os comandos usam os mesmos botões da página.
 
-**NA TELA:** com o cartão na tela, aponte os parágrafos do xv6 e do Linux.
+---
 
-**FALE:**
+## 11. Fork bomb e fechamento · 6:30–7:05
 
-No xv6, a tabela de processos tem 64 lugares.
+71 palavras, cerca de 33 s.
 
-Quando ela enche, `fork` devolve menos um, e o sistema continua de pé.
+**NA TELA**
 
-No Linux, o `ulimit` e o controlador `pids` do cgroup fazem o `fork` falhar antes.
+- [ ] Digite `forkbomb` e aperte **Enter**.
+- [ ] Não clique em nada durante a animação: um clique fecha.
+- [ ] Espere uns 9 segundos, até o cartão "Calma: foi só um easter egg".
+- [ ] Com o cartão na tela, aponte os parágrafos do xv6 e do Linux.
+- [ ] Clique em **Reiniciar o sistema**.
+- [ ] Pare a gravação.
 
-As simplificações estão no README.
+**FALE**
+
+*(ação: digite forkbomb, Enter; sem clicar, espere o cartão "Calma: foi só um easter egg")*
+
+O último comando é um jogo: o **fork bomb**.
+
+Os processos **se copiam** sem parar, até lotar a tabela.
+
+*(pausa)*
+
+Parece que o site caiu, mas é **só animação**.
+
+*(ação: aponte os parágrafos do xv6 e do Linux no cartão)*
+
+No xv6, a tabela de processos tem **64 lugares**.
+
+Quando ela enche, `fork` devolve **menos um**, e o sistema continua de pé.
+
+No Linux, o **`ulimit`** e o controlador **`pids`** do cgroup fazem o `fork` falhar antes.
+
+As simplificações estão no **README**.
 
 Obrigado.
 
-**NA TELA:** clique em **Reiniciar o sistema** e pare a gravação.
+*(ação: clique em Reiniciar o sistema e pare a gravação)*
+
+---
 
 ## Se algo der errado
 
-- **Apertou a tecla errada:** aperte **Z** (Voltar 1 passo) e siga. No vídeo, dá para cortar o
-  trecho depois.
-- **Clicou em Cancelar na pergunta:** clique de novo na aba, em **Aplicar e reiniciar** ou em
-  **Começar 1.1** e, desta vez, em **Continuar**.
-- **Um clique fechou o fork bomb antes do cartão:** no terminal, digite `forkbomb` de novo e não
-  mexa no mouse até o cartão.
-- **A página travou ou ficou estranha:** aperte **F5**. O simulador volta ao início, no nível 1:
-  abra a aba do nível em que parou, refaça o **Ajustar** do trecho e regrave a partir dele.
+| Problema | O que fazer |
+|---|---|
+| Apertou a tecla errada | Aperte **Z** (Voltar 1 passo) e siga. No vídeo, dá para cortar o trecho depois. |
+| Clicou em **Cancelar** na pergunta | Clique de novo na aba, em **Aplicar e reiniciar** ou em **Começar 1.1** e, desta vez, em **Continuar**. |
+| Um clique fechou o fork bomb antes do cartão | No terminal, digite `forkbomb` de novo e não mexa no mouse até o cartão. |
+| A página travou ou ficou estranha | Aperte **F5**. O simulador volta ao início, no nível 1: abra a aba do nível em que parou, refaça o **Ajustar** do trecho e regrave a partir dele. |
 
 ## Depois de gravar
 
