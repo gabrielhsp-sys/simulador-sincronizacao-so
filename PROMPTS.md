@@ -897,3 +897,117 @@ Limites obrigatórios (segurança e acessibilidade):
 | Mockups de layout | Reprovados por parecerem "site feito por IA" (cinza-azulado, cartões brancos). | Identidade forte própria: "Fábrica de Processos". |
 | Fusão | O mockup dizia "kernel panic" para erros de processo. | O autor apontou o erro conceitual; a interface diz "kernel$ alerta". |
 | Registro dos prompts | Os prompts 5 a 8 tinham sido registrados resumidos. | Agora estão inteiros (prompt 9). |
+
+## Roteiros para leitura em voz alta (prompt 13)
+
+Os dois roteiros (`ROTEIRO-APRESENTACAO.md` e `VIDEO.md`) viraram fala pronta, com a ação na tela
+separada do texto lido. O simulador não mudou.
+
+<details>
+<summary>Prompt 13 — reescrever os roteiros para leitura em voz alta</summary>
+
+```markdown
+# Reescrever os roteiros de apresentação e de vídeo para leitura em voz alta
+
+## Objetivo
+ROTEIRO-APRESENTACAO.md (aula, ~5 min, apresentado pela Pessoa 2) e VIDEO.md (~7 min, gravado
+pelo autor) viram FALA PRONTA: texto para ler em voz alta, frase por frase, com tranquilidade,
+sem improvisar, e com as ações na tela separadas da fala. Formato: só os .md reescritos
+(decisão do autor). Nada de PDF, HTML ou teleprompter.
+
+## Projeto
+Simulador de Sincronização, Comunicação e Deadlock — [pasta do projeto]
+Publicado: https://[login do autor].github.io/simulador-sincronizacao-so/ (repo público
+[login do autor]/simulador-sincronizacao-so, branch main).
+
+## O que já existe — não refazer
+- Simulador final aprovado e publicado: identidade Fábrica de Processos, 3 níveis, desafios,
+  terminal kernel$ (dica "help" no rodapé), fork bomb intensificado, Auto até 2×.
+- Os dois roteiros já existem com a estrutura de tempo. Reaproveite a ordem dos trechos e o que
+  estiver correto; o que muda é a escrita e o formato de leitura.
+- Não toque em index.html, <script id="logica"> nem tests/ (18/18 continua).
+
+## Antes de escrever: inventário do que existe hoje
+- Leia os dois roteiros atuais, o README.md e o index.html (só leitura).
+- Confira no index.html cada tecla, botão, comando do terminal e texto de tela que o roteiro
+  cita. Se o roteiro atual cita algo que não existe mais ou mudou (ex.: velocidade 4×, gatilho
+  antigo), corrija. Toda divergência entra no relatório.
+
+## Formato de cada roteiro
+- Cabeçalho curto: quem lê, duração total, o que deixar aberto antes de começar (aba do
+  simulador, nível, zoom, modo Apresentar), em lista de checagem.
+- Um bloco por trecho, sempre na mesma ordem:
+  ### 0:00–0:40 · Título do trecho
+  **NA TELA:** ação em linha própria, com a tecla ou o botão exato (ex.: aperte **1**,
+  clique **Executar P0**, digite `help` + Enter).
+  **FALE:** o texto para ler.
+- Fala:
+  - frases curtas, uma por linha, de até ~20 palavras;
+  - português falado e natural, na primeira pessoa do plural ("aqui a gente vê…"), sem jargão
+    sem explicação;
+  - cada termo técnico explicado na primeira vez em que aparece (condição de corrida, seção
+    crítica, lock, buffer circular, sleep/wakeup, deadlock, espera circular);
+  - pausas marcadas com "(pausa)" onde a tela precisa de um momento;
+  - nada de ler código linha por linha: explique o que a linha faz.
+- Ritmo: ~130 palavras por minuto, que é um ritmo calmo. Cada trecho mostra a contagem de
+  palavras da fala, e a soma bate com a duração alvo (±10%). Informe as contagens no relatório.
+- Fim de cada roteiro: um bloco "Se algo der errado" com 3–4 saídas curtas (ex.: o Auto rodou
+  demais → **Voltar 1 passo**; a página travou → F5, e o simulador volta ao início).
+
+## Conteúdo
+- ROTEIRO-APRESENTACAO.md (5 min, aula): os 3 níveis, um momento "provoque o bug e conserte" por
+  nível, uma frase ligando cada nível ao xv6 (spinlock com acquire/release; pipe com
+  nread/nwrite e sleep/wakeup; ordem global de locks) e o fechamento. O fork bomb entra só se
+  couber no tempo, como encerramento opcional, marcado assim.
+- VIDEO.md (~7 min): o mesmo arco com mais calma, incluindo o tutorial/glossário, o painel
+  "Como o xv6 e o Linux fazem", o terminal (help, ps, glossario deadlock) e o fork bomb no fim,
+  com a explicação do cartão (no xv6 a tabela de processos enche e fork() devolve -1; no Linux,
+  ulimit/cgroup pids).
+- Correção técnica obrigatória:
+  - nada de "kernel panic" para atualização perdida, lost wakeup ou fork bomb;
+  - diga que o simulador intercala passos e que cada processo representa um fluxo concorrente,
+    como se estivesse noutra CPU;
+  - o núcleo do xv6 não usa semáforo.
+  Confira cada afirmação contra README.md e DECISOES.md. Se algo não estiver lá, não afirme.
+- Sem nomes de pessoas, nem do autor nem de colegas: use "Pessoa 2" onde precisar.
+
+## Ferramentas e skills
+- humanizer@humanizer: cobre só texto em inglês, então NÃO se aplica. Para tirar a cara de IA do
+  texto em português, use o workflow de texto em português do ecossistema que a linha do
+  humanizer aponta. needs-verification: o nome exato em [ecossistema de IA do autor]/workflows/ (só
+  leitura). Se não achar, siga sem e diga no relatório.
+- Nenhuma outra skill do catálogo cobre esta tarefa: não é UI, código nem auditoria.
+
+## Modo
+De uma vez: inventário → reescrita → conferência → commit. Pare só em "Pare e pergunte".
+
+## Git
+- Commit dos dois roteiros (e de README/DECISOES/PROMPTS, se você os tocar).
+- Assumido pelo autor, como nas rodadas anteriores: push na main de
+  [login do autor]/simulador-sincronizacao-so, sem --force, sem rebase. Nenhum outro repositório.
+- PROMPTS.md: registre este pedido sanitizado (sem nome, login nem caminho pessoal).
+- A pasta prompts/ fica fora do git.
+
+## Relatório
+- Para cada roteiro:
+  - duração alvo × estimada pelas palavras;
+  - lista de trechos com o tempo;
+  - divergências corrigidas em relação ao index.html.
+- O que o autor deve testar: ler o roteiro em voz alta uma vez com um cronômetro.
+
+## Pare e pergunte
+- Se a duração alvo não couber sem cortar um nível inteiro: pergunte o que cortar.
+- Se algo exigir mexer no simulador.
+- Push recusado (não force).
+```
+
+</details>
+
+### O que a IA corrigiu nos roteiros nesta rodada
+
+| Antes | Problema | Agora |
+|---|---|---|
+| Nenhum roteiro citava a pergunta "Perder a simulação atual?" | Ela aparece ao trocar de nível, em "Aplicar e reiniciar" e ao começar um desafio depois de qualquer passo, com o foco em "Cancelar" (rodada de acabamento). | Cada passo diz "clique em Continuar", e o cabeçalho avisa para não apertar Enter. |
+| O vídeo pedia o modo Apresentar e depois o botão Desafios e a linha marcada com ► | O modo Apresentar esconde os botões Desafios, Glossário e Ajuda e o código dos processos. | O vídeo é gravado sem o modo Apresentar, com F11. A aula continua com o modo Apresentar e não usa esses botões. |
+| A fala citava `amoswap` e o lockdep do Linux | Não estão no `README.md` nem no `DECISOES.md`. | Saíram da fala. |
+| O vídeo abria o terminal pela crase | No teclado ABNT2 a crase é tecla morta. | O terminal abre pelo campo `kernel$` do rodapé; a crase fica como alternativa. |
